@@ -147,7 +147,7 @@ test("lets the player control every story page and ends with a clear answer", as
   await expect(chapter.getByRole("heading")).toHaveText(
     "Das ist keine Aufzeichnung.",
   );
-  await expect(page.locator('[data-module="signal"]')).toBeHidden();
+  await expect(chapter).toHaveAttribute("open", "");
   await chapter.getByRole("button", { name: "Weiter zu Level 2" }).click();
 
   await solveSignal(page);
@@ -211,7 +211,7 @@ test("shows visual, audio-ready and supported haptic feedback for controls", asy
   });
   await page.reload();
   await startMission(page);
-  const relay = page.getByRole("button", { name: /R1 AUS/ });
+  const relay = page.locator('[data-relay="0"]');
   await relay.click();
   await expect(relay).toHaveAttribute("data-feedback", "success");
   const pattern = await page.evaluate(
@@ -398,7 +398,7 @@ test("has no automatically detectable WCAG A/AA violations", async ({
 
 test("honours reduced motion and keyboard activation", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const relay = page.getByRole("button", { name: /R1 AUS/ });
+  const relay = page.locator('[data-relay="0"]');
   await relay.focus();
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "true");

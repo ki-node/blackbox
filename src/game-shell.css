@@ -1224,11 +1224,11 @@ button[data-feedback="tap"],
   }
 
   .signal-adjuster > button {
-    min-height: 2.35rem;
+    min-height: 2.75rem;
   }
 
   .signal-adjuster input[type="range"] {
-    height: 1.6rem;
+    height: 2rem;
   }
 
   .symbol-bank button {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BALANCE_TARGET,
+  MEMORY_SEQUENCE,
   ROUTE_PATH,
   ROUTE_TARGET,
   ROUTE_TILES,
@@ -42,13 +43,7 @@ describe("game engine", () => {
     expect(wrong.matched).toBe(false);
     expect(wrong.state.memoryProgress).toBe(0);
 
-    for (const symbol of [
-      "triangle",
-      "diamond",
-      "circle",
-      "triangle",
-      "square",
-    ] as const) {
+    for (const symbol of MEMORY_SEQUENCE) {
       state = enterMemorySymbol(state, symbol).state;
     }
     expect(state.solved.memory).toBe(true);
@@ -105,8 +100,8 @@ describe("game engine", () => {
     expect(balanceDistance(BALANCE_TARGET)).toBe(0);
     expect(isBalanceCorrect(BALANCE_TARGET)).toBe(true);
     expect(isBalanceCorrect([2, 3, 4, 3])).toBe(false);
-    expect(isLockCorrect([3, 7, 5, 4, 2])).toBe(true);
-    expect(isLockCorrect([3, 7, 5, 4, 1])).toBe(false);
+    expect(isLockCorrect([3, 7, 6, 4, 2])).toBe(true);
+    expect(isLockCorrect([3, 7, 6, 4, 1])).toBe(false);
   });
 
   it("tracks six solved stages before completion", () => {

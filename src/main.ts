@@ -1,5 +1,6 @@
 import "./styles.css";
 import { AudioController } from "./audio-controller";
+import { FinaleController } from "./finale-controller";
 import {
   MEMORY_SEQUENCE,
   createInitialState,
@@ -75,6 +76,11 @@ class BlackBoxApp {
   );
   private readonly transmission = requireElement<HTMLDialogElement>(
     "[data-transmission]",
+  );
+  private readonly finale = new FinaleController(
+    this.transmission,
+    this.audio,
+    () => this.reset(),
   );
   private readonly cleanup: Array<() => void> = [];
   private sequenceTimers: number[] = [];
@@ -171,13 +177,6 @@ class BlackBoxApp {
     this.listen(requireElement("[data-reset]"), "click", () =>
       this.armOrReset(),
     );
-    this.listen(requireElement("[data-close-transmission]"), "click", () =>
-      this.transmission.close(),
-    );
-    this.listen(requireElement("[data-restart]"), "click", () => {
-      this.transmission.close();
-      this.reset();
-    });
     this.listen(window, "resize", () => this.scope.resize());
     this.listen(window, "beforeunload", () => this.destroy());
   }
@@ -365,6 +364,7 @@ class BlackBoxApp {
 
   private reset(): void {
     this.clearSequenceTimers();
+    this.finale.reset();
     this.state = createInitialState();
     localStorage.removeItem(STORAGE_KEY);
     const button = requireElement<HTMLButtonElement>("[data-reset]");
@@ -378,7 +378,7 @@ class BlackBoxApp {
   }
 
   private openTransmission(): void {
-    if (!this.transmission.open) this.transmission.showModal();
+    this.finale.open();
   }
 
   private render(): void {
@@ -519,6 +519,7 @@ class BlackBoxApp {
     window.clearTimeout(this.resetTimer);
     this.cleanup.forEach((remove) => remove());
     this.scope.destroy();
+    this.finale.destroy();
     this.audio.destroy();
   }
 }

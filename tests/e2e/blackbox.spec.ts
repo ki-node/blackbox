@@ -39,7 +39,7 @@ async function solveMemory(page: Page): Promise<void> {
 }
 
 async function solveRoute(page: Page): Promise<void> {
-  const turns = [3, 0, 1, 0, 3, 1, 1, 0, 3];
+  const turns = [3, 0, 1, 2, 3, 3, 1, 0, 3];
   for (const [index, count] of turns.entries()) {
     for (let turn = 0; turn < count; turn += 1) {
       await page.locator(`[data-route="${index}"]`).click();

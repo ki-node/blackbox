@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   BALANCE_TARGET,
+  ROUTE_PATH,
   ROUTE_TARGET,
+  ROUTE_TILES,
   balanceDistance,
   completedCount,
   createInitialState,
@@ -13,6 +15,7 @@ import {
   isRouteCorrect,
   isSignalCorrect,
   restoreState,
+  routeConnections,
   routePowerLength,
   signalDistance,
 } from "./game-engine";
@@ -60,6 +63,42 @@ describe("game engine", () => {
     broken[4] = 1;
     expect(routePowerLength(broken)).toBe(4);
     expect(isRouteCorrect(broken)).toBe(false);
+  });
+
+  it("defines one continuous route from the left inlet to the right outlet", () => {
+    const opposite = {
+      up: "down",
+      right: "left",
+      down: "up",
+      left: "right",
+    } as const;
+    const directionBetween = (from: number, to: number) => {
+      const difference = to - from;
+      if (difference === 1) return "right";
+      if (difference === -1) return "left";
+      if (difference === 3) return "down";
+      return "up";
+    };
+    const connectionsAt = (index: number) => {
+      const tile = ROUTE_TILES[index];
+      const orientation = ROUTE_TARGET[index];
+      if (!tile || orientation === undefined) throw new Error("Invalid route");
+      return routeConnections(tile, orientation);
+    };
+
+    expect(connectionsAt(ROUTE_PATH[0])).toContain("left");
+    expect(connectionsAt(ROUTE_PATH.at(-1)!)).toContain("right");
+
+    for (let step = 0; step < ROUTE_PATH.length - 1; step += 1) {
+      const current = ROUTE_PATH[step];
+      const next = ROUTE_PATH[step + 1];
+      if (current === undefined || next === undefined) {
+        throw new Error("Invalid route path");
+      }
+      const direction = directionBetween(current, next);
+      expect(connectionsAt(current)).toContain(direction);
+      expect(connectionsAt(next)).toContain(opposite[direction]);
+    }
   });
 
   it("validates the balance rules and final five-part code", () => {

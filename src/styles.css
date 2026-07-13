@@ -108,6 +108,7 @@ button:disabled {
   position: fixed;
   z-index: -1;
   inset: 0;
+  overflow: hidden;
   pointer-events: none;
 }
 

@@ -17,7 +17,7 @@ async function solveSignal(page: Page): Promise<void> {
 
 async function solveMemory(page: Page): Promise<void> {
   for (const label of ["Dreieck", "Raute", "Kreis", "Dreieck", "Quadrat"]) {
-    await page.getByRole("button", { name: label }).click();
+    await page.getByRole("button", { name: label, exact: true }).click();
   }
 }
 

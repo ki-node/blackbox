@@ -811,6 +811,10 @@ class BlackBoxApp {
     const completePanel = requireElement<HTMLElement>("[data-complete-panel]");
     completePanel.hidden = stage !== "complete";
     this.effects.updateProgress(solvedCount);
+
+    if (stage === "signal") {
+      window.requestAnimationFrame(() => this.scope.resize());
+    }
   }
 
   private reject(message: string, element: HTMLElement): void {

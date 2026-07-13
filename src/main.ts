@@ -21,11 +21,11 @@ import { ScopeRenderer } from "./scope-renderer";
 const STORAGE_KEY = "black-box-progress-v1";
 
 const stageCopy: Record<Stage, string> = {
-  power: "Notstromkreis unterbrochen. Relaisstellung rekonstruieren.",
-  signal: "Energie stabil. Aufgezeichnete Wellenform ausrichten.",
-  memory: "Trägerwelle gekoppelt. Flüchtiges Echo im Speicher erkannt.",
-  lock: "Echo bestätigt. Mechanischer Verschluss wartet auf Ableitung.",
-  complete: "Archiv entsiegelt. Anomale Übertragung wiederhergestellt.",
+  power: "Level 1 von 6: Schalte die Relais wie in der Gravur ein.",
+  signal: "Level 2 von 6: Stelle die drei Regler auf die eingeritzten Werte.",
+  memory: "Level 3 von 6: Höre das Formenmuster und spiele es nach.",
+  lock: "Level 4 von 6: Bilde den Code aus Relais, Frequenz und Echo-Länge.",
+  complete: "4 von 6 Levels geschafft. Öffne die Nachricht der Asteria.",
 };
 
 const symbolLabels: Record<SymbolName, string> = {
@@ -41,16 +41,16 @@ const hints: Record<Exclude<Stage, "complete">, readonly [string, string]> = {
     "Stelle R1, R3 und R4 auf EIN. R2 bleibt AUS.",
   ],
   signal: [
-    "Die drei eingeritzten römischen Zahlen folgen derselben Reihenfolge wie die Regler.",
-    "Carrier 7, Gain 3, Phase 2.",
+    "Die drei eingeritzten römischen Zahlen gehören der Reihe nach zu den drei Reglern.",
+    "Frequenz 7, Stärke 3, Versatz 2.",
   ],
   memory: [
     "Das Echo besteht aus fünf Impulsen. Spiele es erneut ab und achte auf jedes Symbol.",
     "Dreieck, Raute, Kreis, Dreieck, Quadrat.",
   ],
   lock: [
-    "R, C und E stehen für aktive Relais, Carrier und Echo-Länge.",
-    "Drei Relais, Carrier sieben, fünf Echo-Impulse: 375.",
+    "R, F und E stehen für aktive Relais, Frequenz und Echo-Länge.",
+    "Drei Relais, Frequenz sieben, fünf Echo-Impulse: 375.",
   ],
 };
 
@@ -287,7 +287,7 @@ class BlackBoxApp {
   private unseal(): void {
     if (!isLockCorrect(this.state.lock)) {
       this.setStatus(
-        "Verschluss blockiert. Ableitung R · C · E ist ungültig.",
+        "Der Code stimmt noch nicht. Lies R · F · E von links nach rechts.",
         true,
       );
       this.audio.error();
@@ -387,8 +387,8 @@ class BlackBoxApp {
     document.documentElement.dataset.stage = stage;
     this.systemState.textContent =
       stage === "complete"
-        ? "ARCHIVE OPEN"
-        : `RECOVERY ${Math.min(4, this.completedCount() + 1)}/4`;
+        ? "MESSAGE FOUND · 4/6"
+        : `MISSION ${Math.min(4, this.completedCount() + 1)}/6`;
 
     document
       .querySelectorAll<HTMLButtonElement>("[data-relay]")

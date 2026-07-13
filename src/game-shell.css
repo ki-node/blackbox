@@ -888,8 +888,10 @@ button[data-feedback="tap"],
 .key-strip b {
   color: var(--green);
   font:
-    800 1.05rem/1.2 ui-monospace,
+    800 clamp(0.45rem, 1.8vw, 0.62rem) / 1.2 ui-monospace,
     monospace;
+  letter-spacing: 0.03em;
+  text-align: center;
 }
 
 .app-game .number-lock {
@@ -1068,10 +1070,12 @@ button[data-feedback="tap"],
   margin: auto;
   padding: clamp(0.8rem, 4vw, 2.5rem);
   overflow: hidden;
-  border: 1px solid var(--line-bright);
+  border: 1px solid #829087;
+  background: #030504;
 }
 
 .finale .finale-screen {
+  position: relative;
   z-index: 2;
   display: flex;
   min-width: 0;
@@ -1081,7 +1085,32 @@ button[data-feedback="tap"],
   justify-content: center;
   flex-direction: column;
   overflow: auto;
+  isolation: isolate;
   text-align: center;
+}
+
+.finale .finale-screen::before {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: min(100%, 50rem);
+  height: min(92%, 44rem);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(3, 5, 4, 0.98) 0,
+    rgba(3, 5, 4, 0.94) 48%,
+    rgba(3, 5, 4, 0.78) 70%,
+    rgba(3, 5, 4, 0) 100%
+  );
+  content: "";
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.finale .finale-screen > * {
+  position: relative;
+  z-index: 1;
 }
 
 .finale .finale-screen h2 {
@@ -1089,6 +1118,9 @@ button[data-feedback="tap"],
   margin: 0.55rem auto 1rem;
   font-size: clamp(2.2rem, 10vw, 6.5rem);
   line-height: 0.88;
+  text-shadow:
+    0 0.15rem 0 #000,
+    0 0 1rem #000;
   text-wrap: balance;
 }
 
@@ -1096,7 +1128,7 @@ button[data-feedback="tap"],
 .finale-message {
   max-width: 43rem;
   margin: 0 auto 1.3rem;
-  color: #d2dcd6;
+  color: var(--ink);
   font-size: clamp(0.88rem, 2.5vw, 1.15rem);
   line-height: 1.55;
 }
@@ -1110,6 +1142,16 @@ button[data-feedback="tap"],
   width: min(100%, 28rem);
   min-height: 3rem;
   margin: 0 auto;
+}
+
+.finale .secondary-button {
+  border-color: #829087;
+  background: rgba(3, 5, 4, 0.9);
+}
+
+.finale .eyebrow,
+.finale .transmission__meta {
+  text-shadow: 0 0.1rem 0.65rem #000;
 }
 
 .finale .send-route {

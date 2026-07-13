@@ -172,6 +172,28 @@ test("routes recovery energy through the machine and reacts to touch", async ({
   expect(pointerX).not.toBe("50%");
 });
 
+test("prevents double-tap zoom on rapid controls without disabling page zoom", async ({
+  page,
+}) => {
+  await solvePower(page);
+  await solveSignal(page);
+  await solveMemory(page);
+
+  for (const control of [
+    page.getByRole("button", { name: "Erste Ziffer erhöhen" }),
+    page.getByRole("button", { name: "Erste Ziffer verringern" }),
+    page.getByRole("button", { name: "Black Box öffnen" }),
+  ]) {
+    await expect(control).toHaveCSS("touch-action", "manipulation");
+  }
+
+  const viewport = await page
+    .locator('meta[name="viewport"]')
+    .getAttribute("content");
+  expect(viewport).not.toContain("user-scalable=no");
+  expect(viewport).not.toContain("maximum-scale=1");
+});
+
 test("resets only after explicit confirmation", async ({ page }) => {
   await solvePower(page);
   const reset = page.getByRole("button", { name: "Zurücksetzen" });

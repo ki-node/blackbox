@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta
+      name="description"
+      content="BLACK BOX ist ein kurzes, barrierearmes Maschinenrätsel direkt im Browser."
+    />
+    <meta name="theme-color" content="#070908" />
+    <title>BLACK BOX – Interaktives Maschinenrätsel</title>
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <a class="skip-link" href="#machine">Zur Maschine springen</a>
+
+    <div class="atmosphere" aria-hidden="true">
+      <div class="atmosphere__beam"></div>
+      <div class="atmosphere__noise"></div>
+    </div>
+
+    <header class="site-header">
+      <a class="wordmark" href="./" aria-label="BLACK BOX – Neustartseite">
+        <span>BLACK</span><i aria-hidden="true"></i><span>BOX</span>
+      </a>
+      <div class="header-actions">
+        <button
+          class="utility-button"
+          type="button"
+          data-audio
+          aria-pressed="false"
+        >
+          <span class="utility-button__lamp" aria-hidden="true"></span>
+          <span data-audio-label>Ton aus</span>
+        </button>
+        <button class="utility-button" type="button" data-reset>
+          Zurücksetzen
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">RECOVERY INTERFACE / UNIT 04</p>
+        <h1 id="page-title"><span>Was ist</span> in der Box?</h1>
+        <p class="intro__copy">
+          Kein Handbuch. Vier verriegelte Systeme. Eine letzte Übertragung.
+        </p>
+        <a class="enter-link" href="#machine">
+          Maschine untersuchen
+          <span aria-hidden="true">↓</span>
+        </a>
+      </section>
+
+      <nav class="progress" aria-label="Systemfortschritt">
+        <ol>
+          <li data-progress="power" aria-current="step">
+            <span>01</span><strong>Energie</strong><i aria-hidden="true"></i>
+          </li>
+          <li data-progress="signal">
+            <span>02</span><strong>Frequenz</strong><i aria-hidden="true"></i>
+          </li>
+          <li data-progress="memory">
+            <span>03</span><strong>Echo</strong><i aria-hidden="true"></i>
+          </li>
+          <li data-progress="lock">
+            <span>04</span><strong>Verschluss</strong><i aria-hidden="true"></i>
+          </li>
+        </ol>
+      </nav>
+
+      <section class="machine" id="machine" aria-labelledby="machine-title">
+        <div class="machine__topline">
+          <div>
+            <p class="machine__serial">FLIGHT RECORDER // XB-04</p>
+            <h2 id="machine-title">Wiederherstellungskonsole</h2>
+          </div>
+          <div class="machine__state">
+            <span class="state-lamp" aria-hidden="true"></span>
+            <span data-system-state>SYSTEM OFFLINE</span>
+          </div>
+        </div>
+
+        <div
+          class="machine__display"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span aria-hidden="true">›</span>
+          <p data-status>
+            Notstromkreis unterbrochen. Relaisstellung rekonstruieren.
+          </p>
+        </div>
+
+        <div class="machine__grid">
+          <section
+            class="module module--power"
+            data-module="power"
+            aria-labelledby="power-title"
+          >
+            <div class="module__header">
+              <span class="module__index">01</span>
+              <div>
+                <p>PRIMARY RELAY</p>
+                <h3 id="power-title" tabindex="-1">Energie</h3>
+              </div>
+              <span class="module__status" data-module-status>OFFLINE</span>
+            </div>
+
+            <div
+              class="relay-clue"
+              aria-label="Eingravierte Relaisfolge: gefüllt, leer, gefüllt, gefüllt"
+            >
+              <span aria-hidden="true">●</span>
+              <span aria-hidden="true">○</span>
+              <span aria-hidden="true">●</span>
+              <span aria-hidden="true">●</span>
+            </div>
+
+            <fieldset class="relay-bank">
+              <legend class="sr-only">Vier Relais einstellen</legend>
+              <button
+                type="button"
+                class="relay"
+                data-relay="0"
+                aria-pressed="false"
+              >
+                <span class="relay__number">R1</span><i aria-hidden="true"></i
+                ><b data-relay-label>AUS</b>
+              </button>
+              <button
+                type="button"
+                class="relay"
+                data-relay="1"
+                aria-pressed="false"
+              >
+                <span class="relay__number">R2</span><i aria-hidden="true"></i
+                ><b data-relay-label>AUS</b>
+              </button>
+              <button
+                type="button"
+                class="relay"
+                data-relay="2"
+                aria-pressed="false"
+              >
+                <span class="relay__number">R3</span><i aria-hidden="true"></i
+                ><b data-relay-label>AUS</b>
+              </button>
+              <button
+                type="button"
+                class="relay"
+                data-relay="3"
+                aria-pressed="false"
+              >
+                <span class="relay__number">R4</span><i aria-hidden="true"></i
+                ><b data-relay-label>AUS</b>
+              </button>
+            </fieldset>
+
+            <button class="action-button" type="button" data-check-power>
+              <span>Stromkreis schließen</span><i aria-hidden="true">↗</i>
+            </button>
+          </section>
+
+          <section
+            class="module module--signal is-locked"
+            data-module="signal"
+            aria-labelledby="signal-title"
+            aria-disabled="true"
+            inert
+          >
+            <div class="module__header">
+              <span class="module__index">02</span>
+              <div>
+                <p>WAVE ALIGNMENT</p>
+                <h3 id="signal-title" tabindex="-1">Frequenz</h3>
+              </div>
+              <span class="module__status" data-module-status>LOCKED</span>
+            </div>
+
+            <div class="scope-frame">
+              <canvas
+                data-scope
+                role="img"
+                aria-label="Oszilloskop. Das aktuelle Signal ist noch nicht ausgerichtet."
+              ></canvas>
+              <span class="scope-frame__target">TARGET / LIVE</span>
+            </div>
+
+            <div class="signal-controls">
+              <label>
+                <span>Carrier <output data-output="carrier">4</output></span>
+                <input
+                  data-signal="carrier"
+                  type="range"
+                  min="0"
+                  max="9"
+                  value="4"
+                />
+              </label>
+              <label>
+                <span>Gain <output data-output="gain">5</output></span>
+                <input
+                  data-signal="gain"
+                  type="range"
+                  min="0"
+                  max="9"
+                  value="5"
+                />
+              </label>
+              <label>
+                <span>Phase <output data-output="phase">6</output></span>
+                <input
+                  data-signal="phase"
+                  type="range"
+                  min="0"
+                  max="9"
+                  value="6"
+                />
+              </label>
+            </div>
+
+            <div
+              class="roman-clue"
+              aria-label="Eingeritzte Werte: sieben, drei, zwei"
+            >
+              <span>VII</span><i>/</i><span>III</span><i>/</i><span>II</span>
+            </div>
+
+            <button class="action-button" type="button" data-check-signal>
+              <span>Signal koppeln</span><i aria-hidden="true">↗</i>
+            </button>
+          </section>
+
+          <section
+            class="module module--memory is-locked"
+            data-module="memory"
+            aria-labelledby="memory-title"
+            aria-disabled="true"
+            inert
+          >
+            <div class="module__header">
+              <span class="module__index">03</span>
+              <div>
+                <p>ECHO BUFFER</p>
+                <h3 id="memory-title" tabindex="-1">Erinnerung</h3>
+              </div>
+              <span class="module__status" data-module-status>LOCKED</span>
+            </div>
+
+            <div class="echo-display" data-echo-display aria-hidden="true">
+              <span data-echo="triangle">△</span>
+              <span data-echo="diamond">◇</span>
+              <span data-echo="circle">○</span>
+              <span data-echo="square">□</span>
+            </div>
+            <p class="echo-instruction">Signal abhören. Folge wiederholen.</p>
+            <button class="secondary-button" type="button" data-play-sequence>
+              Echo abspielen
+            </button>
+
+            <div class="symbol-bank" aria-label="Echo-Symbole">
+              <button type="button" data-symbol="triangle" aria-label="Dreieck">
+                <span aria-hidden="true">△</span>
+              </button>
+              <button type="button" data-symbol="diamond" aria-label="Raute">
+                <span aria-hidden="true">◇</span>
+              </button>
+              <button type="button" data-symbol="circle" aria-label="Kreis">
+                <span aria-hidden="true">○</span>
+              </button>
+              <button type="button" data-symbol="square" aria-label="Quadrat">
+                <span aria-hidden="true">□</span>
+              </button>
+            </div>
+            <div
+              class="memory-meter"
+              aria-label="Fortschritt der eingegebenen Folge"
+            >
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+            <p class="sr-only" data-echo-announcement aria-live="assertive"></p>
+          </section>
+
+          <section
+            class="module module--lock is-locked"
+            data-module="lock"
+            aria-labelledby="lock-title"
+            aria-disabled="true"
+            inert
+          >
+            <div class="module__header">
+              <span class="module__index">04</span>
+              <div>
+                <p>MECHANICAL SEAL</p>
+                <h3 id="lock-title" tabindex="-1">Verschluss</h3>
+              </div>
+              <span class="module__status" data-module-status>LOCKED</span>
+            </div>
+
+            <div class="lock-clue">
+              <span><b>R</b> ACTIVE</span>
+              <i>·</i>
+              <span><b>C</b>ARRIER</span>
+              <i>·</i>
+              <span><b>E</b>CHO LENGTH</span>
+            </div>
+
+            <fieldset class="number-lock">
+              <legend class="sr-only">
+                Dreistelligen Verschlusscode einstellen
+              </legend>
+              <div class="number-wheel" data-wheel="0">
+                <button
+                  type="button"
+                  data-wheel-up
+                  aria-label="Erste Ziffer erhöhen"
+                >
+                  +
+                </button>
+                <output aria-label="Erste Ziffer">0</output>
+                <button
+                  type="button"
+                  data-wheel-down
+                  aria-label="Erste Ziffer verringern"
+                >
+                  −
+                </button>
+              </div>
+              <div class="number-wheel" data-wheel="1">
+                <button
+                  type="button"
+                  data-wheel-up
+                  aria-label="Zweite Ziffer erhöhen"
+                >
+                  +
+                </button>
+                <output aria-label="Zweite Ziffer">0</output>
+                <button
+                  type="button"
+                  data-wheel-down
+                  aria-label="Zweite Ziffer verringern"
+                >
+                  −
+                </button>
+              </div>
+              <div class="number-wheel" data-wheel="2">
+                <button
+                  type="button"
+                  data-wheel-up
+                  aria-label="Dritte Ziffer erhöhen"
+                >
+                  +
+                </button>
+                <output aria-label="Dritte Ziffer">0</output>
+                <button
+                  type="button"
+                  data-wheel-down
+                  aria-label="Dritte Ziffer verringern"
+                >
+                  −
+                </button>
+              </div>
+            </fieldset>
+
+            <button
+              class="action-button action-button--danger"
+              type="button"
+              data-unseal
+            >
+              <span>Black Box öffnen</span><i aria-hidden="true">↗</i>
+            </button>
+          </section>
+        </div>
+
+        <aside class="assist" aria-labelledby="assist-title">
+          <div>
+            <p class="eyebrow" id="assist-title">DECODER ASSIST</p>
+            <p data-hint>Noch kein Hinweis angefordert.</p>
+          </div>
+          <button class="secondary-button" type="button" data-hint-button>
+            Hinweis entschlüsseln
+          </button>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      <p>NO ACCOUNT · NO TRACKING · LOCAL PROGRESS</p>
+      <p>BLACK BOX / <span data-year></span></p>
+    </footer>
+
+    <dialog
+      class="transmission"
+      data-transmission
+      aria-labelledby="transmission-title"
+    >
+      <div class="transmission__signal" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <p class="eyebrow">TRANSMISSION RECOVERED / 04:17:09</p>
+      <h2 id="transmission-title">Die Box war nie leer.</h2>
+      <blockquote>
+        „Kein Aufprall. Keine Außenquelle. Das Signal kam aus dem Inneren.“
+      </blockquote>
+      <p class="transmission__meta">ARCHIVE STATUS: ANOMALY CONFIRMED</p>
+      <div class="transmission__actions">
+        <button class="action-button" type="button" data-close-transmission>
+          Maschine untersuchen
+        </button>
+        <button class="secondary-button" type="button" data-restart>
+          Neu starten
+        </button>
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

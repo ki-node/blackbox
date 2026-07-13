@@ -1,0 +1,521 @@
+import "./styles.css";
+import { AudioController } from "./audio-controller";
+import {
+  MEMORY_SEQUENCE,
+  createInitialState,
+  currentStage,
+  enterMemorySymbol,
+  isLockCorrect,
+  isPowerCorrect,
+  isSignalCorrect,
+  restoreState,
+  signalDistance,
+  type SignalSettings,
+  type Stage,
+  type SymbolName,
+} from "./game-engine";
+import { ScopeRenderer } from "./scope-renderer";
+
+const STORAGE_KEY = "black-box-progress-v1";
+
+const stageCopy: Record<Stage, string> = {
+  power: "Notstromkreis unterbrochen. Relaisstellung rekonstruieren.",
+  signal: "Energie stabil. Aufgezeichnete Wellenform ausrichten.",
+  memory: "Trägerwelle gekoppelt. Flüchtiges Echo im Speicher erkannt.",
+  lock: "Echo bestätigt. Mechanischer Verschluss wartet auf Ableitung.",
+  complete: "Archiv entsiegelt. Anomale Übertragung wiederhergestellt.",
+};
+
+const symbolLabels: Record<SymbolName, string> = {
+  triangle: "Dreieck",
+  diamond: "Raute",
+  circle: "Kreis",
+  square: "Quadrat",
+};
+
+const hints: Record<Exclude<Stage, "complete">, readonly [string, string]> = {
+  power: [
+    "Die Gravur oberhalb der Relais ist kein Logo. Gefüllte Kreise führen Strom.",
+    "Stelle R1, R3 und R4 auf EIN. R2 bleibt AUS.",
+  ],
+  signal: [
+    "Die drei eingeritzten römischen Zahlen folgen derselben Reihenfolge wie die Regler.",
+    "Carrier 7, Gain 3, Phase 2.",
+  ],
+  memory: [
+    "Das Echo besteht aus fünf Impulsen. Spiele es erneut ab und achte auf jedes Symbol.",
+    "Dreieck, Raute, Kreis, Dreieck, Quadrat.",
+  ],
+  lock: [
+    "R, C und E stehen für aktive Relais, Carrier und Echo-Länge.",
+    "Drei Relais, Carrier sieben, fünf Echo-Impulse: 375.",
+  ],
+};
+
+function requireElement<T extends Element>(
+  selector: string,
+  root: ParentNode = document,
+): T {
+  const element = root.querySelector<T>(selector);
+  if (!element) throw new Error(`Missing element: ${selector}`);
+  return element;
+}
+
+class BlackBoxApp {
+  private state = restoreState(localStorage.getItem(STORAGE_KEY));
+  private readonly audio = new AudioController();
+  private readonly scope: ScopeRenderer;
+  private readonly status = requireElement<HTMLElement>("[data-status]");
+  private readonly systemState = requireElement<HTMLElement>(
+    "[data-system-state]",
+  );
+  private readonly hintText = requireElement<HTMLElement>("[data-hint]");
+  private readonly echoAnnouncement = requireElement<HTMLElement>(
+    "[data-echo-announcement]",
+  );
+  private readonly transmission = requireElement<HTMLDialogElement>(
+    "[data-transmission]",
+  );
+  private readonly cleanup: Array<() => void> = [];
+  private sequenceTimers: number[] = [];
+  private resetTimer = 0;
+  private isPlaying = false;
+
+  public constructor() {
+    const canvas = requireElement<HTMLCanvasElement>("[data-scope]");
+    this.scope = new ScopeRenderer(canvas, this.state.signal);
+    this.bindEvents();
+    this.render();
+    requireElement<HTMLElement>("[data-year]").textContent = String(
+      new Date().getFullYear(),
+    );
+
+    if (currentStage(this.state) === "complete") {
+      window.setTimeout(() => this.openTransmission(), 350);
+    }
+  }
+
+  private listen(
+    element: EventTarget,
+    type: string,
+    listener: EventListener,
+  ): void {
+    element.addEventListener(type, listener);
+    this.cleanup.push(() => element.removeEventListener(type, listener));
+  }
+
+  private bindEvents(): void {
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-relay]")
+      .forEach((button) => {
+        this.listen(button, "click", () => {
+          const index = Number(button.dataset.relay);
+          const power = [...this.state.power];
+          power[index] = !power[index];
+          this.state = { ...this.state, power };
+          this.audio.tone(power[index] ? 180 : 120, 0.07);
+          this.persistAndRender();
+        });
+      });
+
+    this.listen(requireElement("[data-check-power]"), "click", () =>
+      this.checkPower(),
+    );
+    this.listen(requireElement("[data-check-signal]"), "click", () =>
+      this.checkSignal(),
+    );
+
+    document
+      .querySelectorAll<HTMLInputElement>("[data-signal]")
+      .forEach((input) => {
+        this.listen(input, "input", () => {
+          const key = input.dataset.signal as keyof SignalSettings;
+          this.state = {
+            ...this.state,
+            signal: { ...this.state.signal, [key]: Number(input.value) },
+          };
+          this.scope.update(this.state.signal);
+          this.persistAndRender();
+        });
+      });
+
+    this.listen(requireElement("[data-play-sequence]"), "click", () =>
+      this.playSequence(),
+    );
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-symbol]")
+      .forEach((button) => {
+        this.listen(button, "click", () => {
+          if (!this.isPlaying)
+            this.enterSymbol(button.dataset.symbol as SymbolName);
+        });
+      });
+
+    document.querySelectorAll<HTMLElement>("[data-wheel]").forEach((wheel) => {
+      const index = Number(wheel.dataset.wheel);
+      this.listen(requireElement("[data-wheel-up]", wheel), "click", () =>
+        this.turnWheel(index, 1),
+      );
+      this.listen(requireElement("[data-wheel-down]", wheel), "click", () =>
+        this.turnWheel(index, -1),
+      );
+    });
+
+    this.listen(requireElement("[data-unseal]"), "click", () => this.unseal());
+    this.listen(requireElement("[data-hint-button]"), "click", () =>
+      this.revealHint(),
+    );
+    this.listen(requireElement("[data-audio]"), "click", () =>
+      this.toggleAudio(),
+    );
+    this.listen(requireElement("[data-reset]"), "click", () =>
+      this.armOrReset(),
+    );
+    this.listen(requireElement("[data-close-transmission]"), "click", () =>
+      this.transmission.close(),
+    );
+    this.listen(requireElement("[data-restart]"), "click", () => {
+      this.transmission.close();
+      this.reset();
+    });
+    this.listen(window, "resize", () => this.scope.resize());
+    this.listen(window, "beforeunload", () => this.destroy());
+  }
+
+  private checkPower(): void {
+    if (!isPowerCorrect(this.state.power)) {
+      this.setStatus(
+        "Relaisfehler. Stromkreis instabil – Gravur erneut prüfen.",
+        true,
+      );
+      this.audio.tone(82, 0.22);
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      hints: 0,
+      solved: { ...this.state.solved, power: true },
+    };
+    this.audio.tone(240, 0.12);
+    window.setTimeout(() => this.audio.tone(360, 0.16), 110);
+    this.advance("signal");
+  }
+
+  private checkSignal(): void {
+    if (!isSignalCorrect(this.state.signal)) {
+      const distance = signalDistance(this.state.signal);
+      this.setStatus(`Keine Kopplung. Signalabweichung: ${distance}.`, true);
+      this.audio.tone(96 + (9 - Math.min(distance, 9)) * 12, 0.18);
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      hints: 0,
+      solved: { ...this.state.solved, signal: true },
+    };
+    this.audio.tone(420, 0.14);
+    window.setTimeout(() => this.audio.tone(630, 0.18), 130);
+    this.advance("memory");
+  }
+
+  private playSequence(): void {
+    if (this.isPlaying) return;
+    this.clearSequenceTimers();
+    this.isPlaying = true;
+    this.toggleSymbolButtons(true);
+    this.setStatus("Echo-Wiedergabe läuft …");
+
+    MEMORY_SEQUENCE.forEach((symbol, index) => {
+      const timer = window.setTimeout(() => {
+        const echo = requireElement<HTMLElement>(`[data-echo="${symbol}"]`);
+        echo.classList.add("is-active");
+        this.echoAnnouncement.textContent = `Impuls ${index + 1}: ${symbolLabels[symbol]}`;
+        this.audio.tone(
+          { triangle: 260, diamond: 340, circle: 430, square: 520 }[symbol],
+          0.16,
+        );
+        const offTimer = window.setTimeout(
+          () => echo.classList.remove("is-active"),
+          330,
+        );
+        this.sequenceTimers.push(offTimer);
+      }, index * 620);
+      this.sequenceTimers.push(timer);
+    });
+
+    const finishTimer = window.setTimeout(
+      () => {
+        this.isPlaying = false;
+        this.toggleSymbolButtons(false);
+        this.echoAnnouncement.textContent =
+          "Echo beendet. Folge jetzt wiederholen.";
+        this.setStatus("Echo beendet. Eingabebereit.");
+      },
+      MEMORY_SEQUENCE.length * 620 + 120,
+    );
+    this.sequenceTimers.push(finishTimer);
+  }
+
+  private enterSymbol(symbol: SymbolName): void {
+    const result = enterMemorySymbol(this.state, symbol);
+    this.state = result.state;
+    this.audio.tone(
+      result.matched ? 250 + this.state.memoryProgress * 55 : 88,
+      0.12,
+    );
+
+    if (!result.matched) {
+      this.setStatus("Echo abgebrochen. Die Folge beginnt von vorn.", true);
+    } else if (result.complete) {
+      this.state = { ...this.state, hints: 0 };
+      window.setTimeout(() => this.audio.tone(720, 0.22), 120);
+      this.advance("lock");
+      return;
+    } else {
+      this.setStatus(
+        `Echo bestätigt: ${this.state.memoryProgress} von 5 Impulsen.`,
+      );
+    }
+    this.persistAndRender(false);
+  }
+
+  private turnWheel(index: number, direction: number): void {
+    const lock = [...this.state.lock];
+    lock[index] = ((lock[index] ?? 0) + direction + 10) % 10;
+    this.state = { ...this.state, lock };
+    this.audio.tone(110 + (lock[index] ?? 0) * 9, 0.05, 0.02);
+    this.persistAndRender();
+  }
+
+  private unseal(): void {
+    if (!isLockCorrect(this.state.lock)) {
+      this.setStatus(
+        "Verschluss blockiert. Ableitung R · C · E ist ungültig.",
+        true,
+      );
+      this.audio.tone(72, 0.28);
+      return;
+    }
+
+    this.state = {
+      ...this.state,
+      solved: { ...this.state.solved, lock: true },
+    };
+    this.persistAndRender();
+    this.setStatus(stageCopy.complete);
+    [220, 330, 440, 660].forEach((frequency, index) => {
+      window.setTimeout(() => this.audio.tone(frequency, 0.24), index * 140);
+    });
+    window.setTimeout(() => this.openTransmission(), 650);
+  }
+
+  private advance(stage: Exclude<Stage, "power" | "complete">): void {
+    this.persistAndRender();
+    this.setStatus(stageCopy[stage]);
+    window.setTimeout(
+      () => requireElement<HTMLElement>(`#${stage}-title`).focus(),
+      120,
+    );
+  }
+
+  private revealHint(): void {
+    const stage = currentStage(this.state);
+    if (stage === "complete") {
+      this.hintText.textContent =
+        "Die Box ist offen. Mehr gibt dieses Gerät nicht preis.";
+      return;
+    }
+
+    const nextLevel = Math.min(this.state.hints + 1, 2);
+    this.state = { ...this.state, hints: nextLevel };
+    this.hintText.textContent = hints[stage][nextLevel - 1] ?? hints[stage][1];
+    this.persist();
+    const button = requireElement<HTMLButtonElement>("[data-hint-button]");
+    button.textContent =
+      nextLevel === 1 ? "Deutlicherer Hinweis" : "Hinweis vollständig";
+    button.disabled = nextLevel === 2;
+  }
+
+  private toggleAudio(): void {
+    const enabled = this.audio.toggle();
+    const button = requireElement<HTMLButtonElement>("[data-audio]");
+    button.setAttribute("aria-pressed", String(enabled));
+    requireElement<HTMLElement>("[data-audio-label]").textContent = enabled
+      ? "Ton an"
+      : "Ton aus";
+  }
+
+  private armOrReset(): void {
+    const button = requireElement<HTMLButtonElement>("[data-reset]");
+    if (button.dataset.armed === "true") {
+      window.clearTimeout(this.resetTimer);
+      this.reset();
+      return;
+    }
+
+    button.dataset.armed = "true";
+    button.textContent = "Wirklich zurücksetzen?";
+    this.resetTimer = window.setTimeout(() => {
+      delete button.dataset.armed;
+      button.textContent = "Zurücksetzen";
+    }, 4000);
+  }
+
+  private reset(): void {
+    this.clearSequenceTimers();
+    this.state = createInitialState();
+    localStorage.removeItem(STORAGE_KEY);
+    const button = requireElement<HTMLButtonElement>("[data-reset]");
+    delete button.dataset.armed;
+    button.textContent = "Zurücksetzen";
+    this.hintText.textContent = "Noch kein Hinweis angefordert.";
+    this.scope.update(this.state.signal);
+    this.render();
+    this.setStatus(stageCopy.power);
+    requireElement<HTMLElement>("#power-title").focus();
+  }
+
+  private openTransmission(): void {
+    if (!this.transmission.open) this.transmission.showModal();
+  }
+
+  private render(): void {
+    const stage = currentStage(this.state);
+    document.documentElement.dataset.stage = stage;
+    this.systemState.textContent =
+      stage === "complete"
+        ? "ARCHIVE OPEN"
+        : `RECOVERY ${Math.min(4, this.completedCount() + 1)}/4`;
+
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-relay]")
+      .forEach((button, index) => {
+        const active = this.state.power[index] ?? false;
+        button.setAttribute("aria-pressed", String(active));
+        button.classList.toggle("is-active", active);
+        requireElement<HTMLElement>("[data-relay-label]", button).textContent =
+          active ? "EIN" : "AUS";
+      });
+
+    (Object.keys(this.state.signal) as Array<keyof SignalSettings>).forEach(
+      (key) => {
+        requireElement<HTMLInputElement>(`[data-signal="${key}"]`).value =
+          String(this.state.signal[key]);
+        requireElement<HTMLOutputElement>(
+          `[data-output="${key}"]`,
+        ).textContent = String(this.state.signal[key]);
+      },
+    );
+
+    document
+      .querySelectorAll<HTMLElement>(".memory-meter i")
+      .forEach((indicator, index) => {
+        indicator.classList.toggle(
+          "is-filled",
+          index < this.state.memoryProgress,
+        );
+      });
+
+    document
+      .querySelectorAll<HTMLElement>("[data-wheel]")
+      .forEach((wheel, index) => {
+        requireElement<HTMLOutputElement>("output", wheel).textContent = String(
+          this.state.lock[index] ?? 0,
+        );
+      });
+
+    const stages: Array<Exclude<Stage, "complete">> = [
+      "power",
+      "signal",
+      "memory",
+      "lock",
+    ];
+    stages.forEach((name, index) => {
+      const module = requireElement<HTMLElement>(`[data-module="${name}"]`);
+      const solved = this.state.solved[name];
+      const unlocked = index <= this.completedCount();
+      module.classList.toggle("is-locked", !unlocked);
+      module.classList.toggle("is-solved", solved);
+      module.inert = !unlocked;
+      module.setAttribute("aria-disabled", String(!unlocked));
+      requireElement<HTMLElement>("[data-module-status]", module).textContent =
+        solved ? "RESTORED" : unlocked ? "ACTIVE" : "LOCKED";
+
+      const progress = requireElement<HTMLElement>(`[data-progress="${name}"]`);
+      progress.classList.toggle("is-complete", solved);
+      progress.classList.toggle("is-current", name === stage);
+      if (name === stage) progress.setAttribute("aria-current", "step");
+      else progress.removeAttribute("aria-current");
+    });
+
+    if (this.state.hints > 0 && stage !== "complete") {
+      this.hintText.textContent =
+        hints[stage][Math.min(this.state.hints, 2) - 1] ?? hints[stage][1];
+    }
+    const hintButton = requireElement<HTMLButtonElement>("[data-hint-button]");
+    hintButton.disabled = this.state.hints >= 2 || stage === "complete";
+    hintButton.textContent =
+      this.state.hints === 0
+        ? "Hinweis entschlüsseln"
+        : this.state.hints === 1
+          ? "Deutlicherer Hinweis"
+          : "Hinweis vollständig";
+  }
+
+  private completedCount(): number {
+    return Object.values(this.state.solved).filter(Boolean).length;
+  }
+
+  private toggleSymbolButtons(disabled: boolean): void {
+    document
+      .querySelectorAll<HTMLButtonElement>("[data-symbol]")
+      .forEach((button) => {
+        button.disabled = disabled;
+      });
+    requireElement<HTMLButtonElement>("[data-play-sequence]").disabled =
+      disabled;
+  }
+
+  private setStatus(message: string, error = false): void {
+    this.status.textContent = message;
+    this.status
+      .closest(".machine__display")
+      ?.classList.toggle("is-error", error);
+  }
+
+  private persistAndRender(updateStatus = true): void {
+    this.persist();
+    this.render();
+    if (updateStatus) this.setStatus(stageCopy[currentStage(this.state)]);
+  }
+
+  private persist(): void {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+    } catch {
+      // The game remains fully playable when storage is unavailable.
+    }
+  }
+
+  private clearSequenceTimers(): void {
+    this.sequenceTimers.forEach((timer) => window.clearTimeout(timer));
+    this.sequenceTimers = [];
+    this.isPlaying = false;
+    document.querySelectorAll(".echo-display .is-active").forEach((element) => {
+      element.classList.remove("is-active");
+    });
+    this.toggleSymbolButtons(false);
+  }
+
+  private destroy(): void {
+    this.clearSequenceTimers();
+    window.clearTimeout(this.resetTimer);
+    this.cleanup.forEach((remove) => remove());
+    this.scope.destroy();
+    this.audio.destroy();
+  }
+}
+
+new BlackBoxApp();

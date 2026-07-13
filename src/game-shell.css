@@ -632,7 +632,8 @@ button[data-feedback="tap"],
   min-height: 0;
   align-items: center;
   gap: 0.3rem;
-  width: min(100%, 23rem);
+  width: min(100%, 32dvh, 23rem);
+  overflow: hidden;
   margin: auto;
   flex: 1;
 }
@@ -665,6 +666,7 @@ button[data-feedback="tap"],
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   min-height: 0;
+  max-height: 100%;
   aspect-ratio: 1;
   border: 2px solid var(--line-bright);
 }

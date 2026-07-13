@@ -323,7 +323,8 @@ html.has-started,
     rgba(12, 16, 14, 0.92);
   flex-direction: column;
   gap: clamp(0.4rem, 1vh, 0.7rem);
-  overflow: hidden;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
 }
 
 .app-game .module__header {
@@ -1239,7 +1240,7 @@ button[data-feedback="tap"],
   }
 
   .route-board {
-    width: min(100%, 15.5rem);
+    width: min(100%, 12.5rem);
   }
 
   .balance-clue {

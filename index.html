@@ -227,7 +227,7 @@
                 role="img"
                 aria-label="Das aktuelle Signal ist noch nicht ausgerichtet."
               ></canvas>
-              <span class="scope-frame__target">GRAVUR: VII · III · II</span>
+              <span class="scope-frame__target">REFERENZ · LIVE</span>
             </div>
 
             <div class="signal-controls">
@@ -360,7 +360,7 @@
               <span data-echo="square">□</span>
             </div>
             <p class="echo-instruction">
-              Höre fünf Formen. Spiele danach dieselbe Folge.
+              Höre sechs Formen. Spiele danach dieselbe Folge.
             </p>
             <button class="secondary-button" type="button" data-play-sequence>
               Folge abspielen
@@ -385,10 +385,10 @@
               role="progressbar"
               aria-label="Eingegebene Formen"
               aria-valuemin="0"
-              aria-valuemax="5"
+              aria-valuemax="6"
               aria-valuenow="0"
             >
-              <i></i><i></i><i></i><i></i><i></i>
+              <i></i><i></i><i></i><i></i><i></i><i></i>
             </div>
             <p class="sr-only" data-echo-announcement aria-live="assertive"></p>
           </section>
@@ -580,15 +580,15 @@
             </div>
 
             <p class="lock-instruction">
-              Jedes gelöste System hat einen Schlüssel hinterlassen. Übertrage
-              sie von links nach rechts.
+              Jedes gelöste System liefert einen Messwert. Leite die fünf
+              Ziffern von links nach rechts daraus ab.
             </p>
-            <div class="key-strip" aria-label="Gesammelte Schlüssel">
-              <span><small>Relais</small><b>3</b></span>
-              <span><small>Signal</small><b>7</b></span>
-              <span><small>Echo</small><b>5</b></span>
-              <span><small>Ecken</small><b>4</b></span>
-              <span><small>Links</small><b>2</b></span>
+            <div class="key-strip" aria-label="Messwerte für den Verschluss">
+              <span><small>Relais</small><b>AKTIV</b></span>
+              <span><small>Signal</small><b>FREQ</b></span>
+              <span><small>Echo</small><b>LÄNGE</b></span>
+              <span><small>Route</small><b>ECKEN</b></span>
+              <span><small>Route</small><b>LINKS</b></span>
             </div>
 
             <fieldset class="number-lock">
@@ -843,7 +843,13 @@
           <p class="finale-screen__lead">
             Das Signal passiert jeden Abschnitt der sicheren Route.
           </p>
-          <button class="action-button" type="button" data-read-reply disabled>
+          <button
+            class="action-button"
+            type="button"
+            data-read-reply
+            aria-live="polite"
+            disabled
+          >
             Warte auf Antwort …
           </button>
         </section>

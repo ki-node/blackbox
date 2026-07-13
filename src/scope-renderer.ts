@@ -78,8 +78,8 @@ export class ScopeRenderer {
       SIGNAL_TARGET,
       width,
       height,
-      "rgba(255, 177, 64, 0.38)",
-      1.5,
+      "rgba(255, 177, 64, 0.72)",
+      2,
       0,
     );
     this.drawWave(this.signal, width, height, "#63ffbe", 2.2, this.frame);

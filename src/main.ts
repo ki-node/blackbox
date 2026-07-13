@@ -44,12 +44,12 @@ const stageNames: Record<Stage, string> = {
 };
 
 const stageCopy: Record<Stage, string> = {
-  power: "Schalte die Relais wie in der Gravur ein.",
-  signal: "Stelle die drei Werte auf VII · III · II.",
-  memory: "Höre fünf Formen und spiele dieselbe Folge.",
-  route: "Baue eine durchgehende Leitung von IN nach OUT.",
-  balance: "Verteile genau zwölf Einheiten nach den drei Regeln.",
-  lock: "Übertrage die fünf gesammelten Schlüssel in den Verschluss.",
+  power: "Bringe die Relais in den Zustand der Gravur.",
+  signal: "Lege die grüne Live-Welle deckungsgleich auf die Referenz.",
+  memory: "Starte die Wiedergabe und antworte mit derselben Formenfolge.",
+  route: "Stelle eine einzige durchgehende Leitung von IN nach OUT her.",
+  balance: "Erfülle gleichzeitig alle Regeln des Lastenprotokolls.",
+  lock: "Leite den fünfstelligen Code aus den gelösten Systemen ab.",
   complete: "Die Asteria hat geantwortet. Rettungsschiffe sind unterwegs.",
 };
 
@@ -76,12 +76,12 @@ const hints: Record<PuzzleStage, readonly [string, string]> = {
     "Stelle R1, R3 und R4 auf EIN. R2 bleibt AUS.",
   ],
   signal: [
-    "Die römischen Zahlen gehören von links nach rechts zu den drei Reglern.",
+    "Die amberfarbene Referenz bleibt stehen. Verändere immer nur einen Regler und beobachte, wie sich die grüne Live-Welle annähert.",
     "Frequenz 7, Stärke 3, Versatz 2.",
   ],
   memory: [
     "Jede Form besitzt immer denselben Ton. Du kannst die Folge beliebig oft abspielen.",
-    "Dreieck, Raute, Kreis, Dreieck, Quadrat.",
+    "Dreieck, Raute, Kreis, Quadrat, Dreieck, Kreis.",
   ],
   route: [
     "Beginne bei IN oben links. Grüne Kacheln sind bereits richtig verbunden; die erste graue Kachel unterbricht den Strom.",
@@ -92,8 +92,8 @@ const hints: Record<PuzzleStage, readonly [string, string]> = {
     "Von links nach rechts: 2, 3, 3, 4.",
   ],
   lock: [
-    "Die fünf Werte stehen bereits direkt oberhalb der Zahlenräder.",
-    "Der Code lautet 3 · 7 · 5 · 4 · 2.",
+    "Lies die Karten als Messfragen: Anzahl aktiver Relais, eingerastete Frequenz, Echo-Länge, Ecken und Linkskurven des Leitungswegs.",
+    "Der Code lautet 3 · 7 · 6 · 4 · 2.",
   ],
 };
 
@@ -398,7 +398,7 @@ class BlackBoxApp {
     this.clearSequenceTimers();
     this.isPlaying = true;
     this.toggleSymbolButtons(true);
-    this.setStatus("Hör genau hin: fünf Formen folgen.");
+    this.setStatus(`Hör genau hin: ${MEMORY_SEQUENCE.length} Formen folgen.`);
 
     MEMORY_SEQUENCE.forEach((symbol, index) => {
       const timer = window.setTimeout(() => {
@@ -419,9 +419,10 @@ class BlackBoxApp {
       () => {
         this.isPlaying = false;
         this.toggleSymbolButtons(false);
-        this.echoAnnouncement.textContent =
-          "Folge beendet. Wiederhole jetzt die fünf Formen.";
-        this.setStatus("Jetzt bist du dran: Wiederhole die fünf Formen.");
+        this.echoAnnouncement.textContent = `Folge beendet. Wiederhole jetzt die ${MEMORY_SEQUENCE.length} Formen.`;
+        this.setStatus(
+          `Jetzt bist du dran: Wiederhole die ${MEMORY_SEQUENCE.length} Formen.`,
+        );
       },
       MEMORY_SEQUENCE.length * 780 + 160,
     );
@@ -445,7 +446,7 @@ class BlackBoxApp {
       return;
     } else {
       this.setStatus(
-        `Richtig: ${this.state.memoryProgress} von 5 Formen bestätigt.`,
+        `Richtig: ${this.state.memoryProgress} von ${MEMORY_SEQUENCE.length} Formen bestätigt.`,
       );
     }
     this.persistAndRender();

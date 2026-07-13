@@ -32,7 +32,14 @@ async function solveSignal(page: Page): Promise<void> {
 }
 
 async function solveMemory(page: Page): Promise<void> {
-  for (const label of ["Dreieck", "Raute", "Kreis", "Dreieck", "Quadrat"]) {
+  for (const label of [
+    "Dreieck",
+    "Raute",
+    "Kreis",
+    "Quadrat",
+    "Dreieck",
+    "Kreis",
+  ]) {
     await page.getByRole("button", { name: label, exact: true }).click();
   }
   await continueStory(page);
@@ -99,7 +106,7 @@ async function turnWheel(
 async function solveLock(page: Page): Promise<void> {
   await turnWheel(page, 0, "up", 3);
   await turnWheel(page, 1, "down", 3);
-  await turnWheel(page, 2, "up", 5);
+  await turnWheel(page, 2, "up", 6);
   await turnWheel(page, 3, "up", 4);
   await turnWheel(page, 4, "up", 2);
   await page.getByRole("button", { name: "Black Box öffnen" }).click();
@@ -119,6 +126,12 @@ test("opens the black box only after six distinct levels", async ({ page }) => {
   test.setTimeout(90_000);
   await solvePower(page);
   await expect(page.locator('[data-module="signal"]')).toBeVisible();
+  await expect(page.locator("[data-status]")).toHaveText(
+    "Lege die grüne Live-Welle deckungsgleich auf die Referenz.",
+  );
+  await expect(page.locator(".scope-frame__target")).toHaveText(
+    "REFERENZ · LIVE",
+  );
 
   await solveSignal(page);
   await expect(page.locator('[data-module="memory"]')).toBeVisible();
@@ -134,6 +147,7 @@ test("opens the black box only after six distinct levels", async ({ page }) => {
   await expect(page.locator("[data-progress-copy]")).toHaveText(
     "5 von 6 Sicherungen gelöst",
   );
+  expect(await page.locator(".key-strip").innerText()).not.toMatch(/\d/);
 
   await solveLock(page);
   const finale = page.getByRole("dialog", { name: "Geöffnete Black Box" });
@@ -185,6 +199,15 @@ test("lets the player control every story page and ends with a clear answer", as
   );
   await expect(finale).toContainText("Sechsunddreißig Menschen leben");
   await expect(finale).toContainText("DU BIST FERTIG");
+  const ending = finale.locator('[data-finale-screen="ending"]');
+  const endingScrim = await ending.evaluate(
+    (element) => getComputedStyle(element, "::before").backgroundImage,
+  );
+  expect(endingScrim).not.toBe("none");
+  await expect(ending.locator(".finale-screen__lead")).toHaveCSS(
+    "color",
+    "rgb(237, 243, 239)",
+  );
 
   await finale.getByRole("button", { name: "Zur Übersicht" }).click();
   await expect(finale).toBeHidden();
@@ -258,6 +281,20 @@ test("explains errors and offers two levels of optional hints", async ({
   await expect(hint).toContainText("Gefüllte Kreise");
   await hint.getByRole("button", { name: "Deutlicher" }).click();
   await expect(hint).toContainText("R1, R3 und R4");
+});
+
+test("keeps the signal solution behind the optional hint control", async ({
+  page,
+}) => {
+  await solvePower(page);
+  await expect(page.locator("[data-status]")).not.toContainText("VII");
+  await expect(page.locator(".scope-frame__target")).not.toContainText("VII");
+
+  await page.getByRole("button", { name: "Hinweis" }).click();
+  const hint = page.getByRole("dialog", { name: "Hinweis" });
+  await expect(hint).not.toContainText("Frequenz 7");
+  await hint.getByRole("button", { name: "Deutlicher" }).click();
+  await expect(hint).toContainText("Frequenz 7, Stärke 3, Versatz 2");
 });
 
 test("persists the current single-screen level locally", async ({ page }) => {
@@ -430,9 +467,18 @@ test("has no automatically detectable WCAG A/AA violations", async ({
 test("honours reduced motion and keyboard activation", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const relay = page.locator('[data-relay="0"]');
-  await relay.focus();
+  const heading = page.locator("#power-title");
+
+  await relay.click();
+  await expect(relay).toHaveCSS("outline-style", "none");
+  await heading.focus();
+  await expect(heading).toHaveCSS("outline-style", "none");
+  await page.keyboard.press("Tab");
+  await expect(relay).toBeFocused();
+  await expect(relay).toHaveCSS("outline-style", "solid");
+  await expect(relay).toHaveCSS("outline-width", "3px");
   await page.keyboard.press("Enter");
-  await expect(relay).toHaveAttribute("aria-pressed", "true");
+  await expect(relay).toHaveAttribute("aria-pressed", "false");
 
   const animation = await page
     .locator(".atmosphere__beam")

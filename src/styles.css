@@ -4,10 +4,10 @@
   --black-soft: #0a0d0c;
   --panel: #111513;
   --panel-raised: #171c19;
-  --line: #2e3732;
-  --line-bright: #59645e;
+  --line: #39433e;
+  --line-bright: #6d7b73;
   --ink: #edf3ef;
-  --muted: #9da8a1;
+  --muted: #adb8b1;
   --green: #63ffbe;
   --green-dim: #2d9d70;
   --amber: #ffb140;
@@ -65,10 +65,16 @@ button {
   user-select: none;
 }
 
+button:focus,
+a:focus,
+input:focus,
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
 button:focus-visible,
 a:focus-visible,
-input:focus-visible,
-[tabindex="-1"]:focus-visible {
+input:focus-visible {
   outline: 3px solid var(--amber);
   outline-offset: 4px;
 }

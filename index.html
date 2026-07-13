@@ -8,7 +8,7 @@
     />
     <meta
       name="description"
-      content="BLACK BOX ist ein kurzes, barrierearmes Maschinenrätsel direkt im Browser."
+      content="BLACK BOX ist eine kurze, barrierearme Rettungsmission direkt im Browser."
     />
     <meta name="theme-color" content="#070908" />
     <title>BLACK BOX – Interaktives Maschinenrätsel</title>
@@ -44,13 +44,15 @@
 
     <main>
       <section class="intro" aria-labelledby="page-title">
-        <p class="eyebrow">RECOVERY INTERFACE / UNIT 04</p>
-        <h1 id="page-title"><span>Was ist</span> in der Box?</h1>
+        <p class="eyebrow">NOTRUF / ASTERIA 04</p>
+        <h1 id="page-title"><span>Hol sie</span> nach Hause.</h1>
         <p class="intro__copy">
-          Kein Handbuch. Vier verriegelte Systeme. Eine letzte Übertragung.
+          Das Forschungsschiff Asteria gilt seit 23 Jahren als verschollen.
+          Heute sendet seine Black Box wieder. Repariere sie, finde die Crew und
+          schicke Hilfe.
         </p>
         <a class="enter-link" href="#machine">
-          Maschine untersuchen
+          Rettungsmission starten
           <span aria-hidden="true">↓</span>
         </a>
       </section>
@@ -69,6 +71,12 @@
           <li data-progress="lock">
             <span>04</span><strong>Verschluss</strong><i aria-hidden="true"></i>
           </li>
+          <li data-progress="location">
+            <span>05</span><strong>Ortung</strong><i aria-hidden="true"></i>
+          </li>
+          <li data-progress="send">
+            <span>06</span><strong>Senden</strong><i aria-hidden="true"></i>
+          </li>
         </ol>
       </nav>
 
@@ -80,8 +88,8 @@
       >
         <div class="machine__topline">
           <div>
-            <p class="machine__serial">FLIGHT RECORDER // XB-04</p>
-            <h2 id="machine-title">Wiederherstellungskonsole</h2>
+            <p class="machine__serial">RESCUE BEACON // ASTERIA-04</p>
+            <h2 id="machine-title">Rettungskonsole</h2>
           </div>
           <div class="machine__state">
             <span class="state-lamp" aria-hidden="true"></span>
@@ -97,7 +105,7 @@
         >
           <span aria-hidden="true">›</span>
           <p data-status>
-            Notstromkreis unterbrochen. Relaisstellung rekonstruieren.
+            Level 1 von 6: Schalte die Relais wie in der Gravur ein.
           </p>
         </div>
 
@@ -190,8 +198,8 @@
             <div class="module__header">
               <span class="module__index">02</span>
               <div>
-                <p>WAVE ALIGNMENT</p>
-                <h3 id="signal-title" tabindex="-1">Frequenz</h3>
+                <p>SIGNAL VALUES</p>
+                <h3 id="signal-title" tabindex="-1">Signal</h3>
               </div>
               <span class="module__status" data-module-status>LOCKED</span>
             </div>
@@ -202,12 +210,12 @@
                 role="img"
                 aria-label="Oszilloskop. Das aktuelle Signal ist noch nicht ausgerichtet."
               ></canvas>
-              <span class="scope-frame__target">TARGET / LIVE</span>
+              <span class="scope-frame__target">ZIEL / AKTUELL</span>
             </div>
 
             <div class="signal-controls">
               <label>
-                <span>Carrier <output data-output="carrier">4</output></span>
+                <span>Frequenz <output data-output="carrier">4</output></span>
                 <input
                   data-signal="carrier"
                   type="range"
@@ -217,7 +225,7 @@
                 />
               </label>
               <label>
-                <span>Gain <output data-output="gain">5</output></span>
+                <span>Stärke <output data-output="gain">5</output></span>
                 <input
                   data-signal="gain"
                   type="range"
@@ -227,7 +235,7 @@
                 />
               </label>
               <label>
-                <span>Phase <output data-output="phase">6</output></span>
+                <span>Versatz <output data-output="phase">6</output></span>
                 <input
                   data-signal="phase"
                   type="range"
@@ -247,7 +255,7 @@
             </div>
 
             <button class="action-button" type="button" data-check-signal>
-              <span>Signal koppeln</span><i aria-hidden="true">↗</i>
+              <span>Werte übernehmen</span><i aria-hidden="true">↗</i>
             </button>
           </section>
 
@@ -261,8 +269,8 @@
             <div class="module__header">
               <span class="module__index">03</span>
               <div>
-                <p>ECHO BUFFER</p>
-                <h3 id="memory-title" tabindex="-1">Erinnerung</h3>
+                <p>SOUND MEMORY</p>
+                <h3 id="memory-title" tabindex="-1">Echo-Muster</h3>
               </div>
               <span class="module__status" data-module-status>LOCKED</span>
             </div>
@@ -322,11 +330,11 @@
             </div>
 
             <div class="lock-clue">
-              <span><b>R</b> ACTIVE</span>
+              <span><b>R</b>ELAIS</span>
               <i>·</i>
-              <span><b>C</b>ARRIER</span>
+              <span><b>F</b>REQUENZ</span>
               <i>·</i>
-              <span><b>E</b>CHO LENGTH</span>
+              <span><b>E</b>CHO-LÄNGE</span>
             </div>
 
             <fieldset class="number-lock">
@@ -420,8 +428,8 @@
     >
       <div class="transmission__frame">
         <div class="transmission__topline" aria-hidden="true">
-          <span>XB-04 / SEALED ARCHIVE</span>
-          <span>CHANNEL 04:17:09</span>
+          <span>ASTERIA-04 / EMERGENCY ARCHIVE</span>
+          <span>MISSION 04 OF 06</span>
         </div>
 
         <canvas
@@ -439,20 +447,20 @@
           class="finale-screen finale-screen--breach"
           data-finale-screen="breach"
         >
-          <p class="eyebrow">PHYSICAL SEAL RELEASED</p>
-          <h2>Archivbruch erkannt.</h2>
+          <p class="eyebrow">LEVEL 04 ABGESCHLOSSEN</p>
+          <h2>Nachricht gefunden.</h2>
           <p class="finale-screen__lead">
-            Der Verschluss ist offen. Hinter dem Flugschreiber liegt ein
-            zweiter, weiterhin aktiver Speicherbereich.
+            Die vier Reparaturen haben den verschollenen Notruf der Asteria
+            wiederhergestellt. Hör ihn an und bring die Mission zu Ende.
           </p>
           <div class="breach-meter" aria-hidden="true">
             <span></span><span></span><span></span><span></span>
           </div>
           <p class="transmission__meta">
-            WARNUNG: QUELLE DER ÜBERTRAGUNG UNBEKANNT
+            FORTSCHRITT: 4 VON 6 LEVELS ABGESCHLOSSEN
           </p>
           <button class="action-button" type="button" data-reconstruct>
-            Übertragung rekonstruieren
+            Nachricht abspielen
           </button>
         </section>
 
@@ -461,60 +469,96 @@
           data-finale-screen="transmission"
           hidden
         >
-          <p class="eyebrow">TRANSMISSION RECOVERED / 04:17:09</p>
-          <h2 tabindex="-1">Das ist keine Black Box.</h2>
+          <p class="eyebrow">NOTRUF WIEDERHERGESTELLT / 04:17:09</p>
+          <h2 tabindex="-1">Sie leben.</h2>
           <ol class="transcript" aria-label="Rekonstruierte Übertragung">
             <li data-transcript-line hidden>
               <time datetime="04:17:09">04:17:09</time>
-              <p>„Kein Aufprall. Das ist kein Flugschreiber.“</p>
+              <p>„Asteria an jeden, der uns hört. Wir leben.“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:12">04:17:12</time>
-              <p>„Die vier Systeme sind keine Reparaturpfade.“</p>
+              <p>„Der Ionensturm hat unseren Sender zerstört.“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:15">04:17:15</time>
-              <p>„Es sind Sicherungen. Bitte nicht alle vier—“</p>
+              <p>„Nur die Black Box erreicht noch eure Position.“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:18">04:17:18</time>
-              <p>„Wenn alle Anzeigen grün sind, ist es bereits zu spät.“</p>
+              <p>
+                „Findet unser Signal. Schickt es zurück. Dann findet ihr uns.“
+              </p>
             </li>
           </ol>
 
           <div class="calibration" data-calibration hidden>
-            <p class="calibration__code">
-              CONTAINMENT INTERLOCKS: 4/4 RELEASED
-            </p>
+            <p class="calibration__code">LEVEL 05 / CREW ORTEN</p>
             <h3 id="calibration-title" data-calibration-title tabindex="-1">
-              Das war keine Reparatur.
+              Findet ihren Standort.
             </h3>
             <p>
-              Du hast jede Sicherung einzeln aufgehoben. Etwas im Kern benutzt
-              nun dieselben Systeme als Ausgang.
+              Drei Suchpunkte haben die Asteria empfangen. Drehe jeden Pfeil zur
+              leuchtenden Mitte. Dann lässt sich ihre Position bestimmen.
             </p>
-            <div class="calibration__readout" aria-hidden="true">
-              <span>CONTAINMENT</span><b>RELEASED</b> <span>ORIGIN</span
-              ><b>UNKNOWN</b> <span>PROXIMITY</span><b>0.0 M</b>
+            <div class="rescue-compass" data-rescue-compass>
+              <button
+                class="rescue-beacon"
+                type="button"
+                data-direction-button="0"
+                aria-label="Suchpunkt A drehen, zeigt nach oben"
+              >
+                <span>A</span><b aria-hidden="true">↑</b><small>Drehen</small>
+              </button>
+              <div class="rescue-target" aria-label="Zielpunkt Asteria">
+                <i aria-hidden="true"></i><strong>ASTERIA</strong>
+              </div>
+              <button
+                class="rescue-beacon"
+                type="button"
+                data-direction-button="1"
+                aria-label="Suchpunkt B drehen, zeigt nach rechts"
+              >
+                <span>B</span><b aria-hidden="true">→</b><small>Drehen</small>
+              </button>
+              <button
+                class="rescue-beacon rescue-beacon--last"
+                type="button"
+                data-direction-button="2"
+                aria-label="Suchpunkt C drehen, zeigt nach links"
+              >
+                <span>C</span><b aria-hidden="true">←</b><small>Drehen</small>
+              </button>
             </div>
-            <fieldset class="finale-choice">
-              <legend>Der Kern reagiert. Letzter manueller Eingriff:</legend>
-              <button
-                class="secondary-button"
-                type="button"
-                data-finale-choice="shutdown"
-              >
-                Notabschaltung
-              </button>
-              <button
-                class="action-button"
-                type="button"
-                data-finale-choice="contact"
-              >
-                Kontakt herstellen
-              </button>
-            </fieldset>
+            <p class="location-status" data-location-status role="status">
+              Noch zeigen nicht alle Pfeile zur Mitte.
+            </p>
+            <button class="action-button" type="button" data-check-location>
+              Position prüfen
+            </button>
           </div>
+        </section>
+
+        <section
+          class="finale-screen finale-screen--send"
+          data-finale-screen="send"
+          hidden
+        >
+          <p class="eyebrow">LEVEL 06 / RETTUNGSSIGNAL</p>
+          <h2 tabindex="-1" data-send-title>Hol sie nach Hause.</h2>
+          <p class="finale-screen__lead">
+            Die Position der Asteria steht fest. Sende sie jetzt an die
+            Rettungsschiffe. Danach ist deine Mission abgeschlossen.
+          </p>
+          <div class="send-route" aria-hidden="true">
+            <span>ERDE</span><i></i><i></i><i></i><strong>ASTERIA</strong>
+          </div>
+          <p class="transmission__meta">
+            POSITION GEFUNDEN · CREW WARTET · 5 VON 6 LEVELS
+          </p>
+          <button class="action-button" type="button" data-send-signal>
+            Rettungssignal senden
+          </button>
         </section>
 
         <section
@@ -529,15 +573,15 @@
               role="status"
               aria-live="assertive"
             >
-              FINAL CHANNEL STATE
+              RETTUNGSSIGNAL WIRD GESENDET
             </p>
-            <h2 data-ending-title tabindex="-1">Kontakt hergestellt.</h2>
+            <h2 data-ending-title tabindex="-1">Signal unterwegs.</h2>
             <p class="finale-screen__lead" data-ending-copy></p>
             <p class="transmission__meta" data-ending-code></p>
           </div>
           <div class="transmission__actions" data-ending-actions hidden>
             <button class="action-button" type="button" data-close-transmission>
-              Zur veränderten Maschine
+              Zur Missionsübersicht
             </button>
             <button class="secondary-button" type="button" data-restart>
               Neu starten

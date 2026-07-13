@@ -1,5 +1,3 @@
-type FinaleMode = "contact" | "shutdown";
-
 interface OscillatorCue {
   duration: number;
   endFrequency?: number;
@@ -212,43 +210,28 @@ export class AudioController {
     });
   }
 
-  public finalEvent(mode: FinaleMode): void {
+  public finalEvent(): void {
     const context = this.activeContext();
     if (!context) return;
     const now = context.currentTime;
-    const contact = mode === "contact";
     this.noise(context, now, {
       duration: 5.5,
-      frequency: contact ? 90 : 3_600,
-      endFrequency: contact ? 4_800 : 80,
+      frequency: 90,
+      endFrequency: 4_800,
       type: "bandpass",
       volume: 0.045,
     });
-    const voices = contact ? [34, 51, 76] : [81, 54, 27];
+    const voices = [34, 51, 76];
     voices.forEach((frequency, index) => {
       this.oscillator(context, now, {
         start: index * 0.09,
         duration: 5.2 - index * 0.2,
         frequency,
-        endFrequency: contact
-          ? frequency * 2.2
-          : Math.max(19, frequency * 0.52),
+        endFrequency: frequency * 2.2,
         type: index === 0 ? "sawtooth" : "triangle",
         volume: index === 0 ? 0.038 : 0.022,
       });
     });
-    if (!contact) {
-      [0.35, 0.62, 0.88, 1.03].forEach((start, index) => {
-        this.noise(context, now, {
-          start,
-          duration: 0.11 + index * 0.025,
-          frequency: 4_200,
-          endFrequency: 180,
-          type: "bandpass",
-          volume: 0.055,
-        });
-      });
-    }
   }
 
   public destroy(): void {

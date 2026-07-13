@@ -12,7 +12,7 @@ async function solveSignal(page: Page): Promise<void> {
   await page.locator('[data-signal="carrier"]').fill("7");
   await page.locator('[data-signal="gain"]').fill("3");
   await page.locator('[data-signal="phase"]').fill("2");
-  await page.getByRole("button", { name: "Signal koppeln" }).click();
+  await page.getByRole("button", { name: "Werte übernehmen" }).click();
 }
 
 async function solveMemory(page: Page): Promise<void> {
@@ -41,12 +41,19 @@ async function reachFinale(page: Page): Promise<void> {
   await solveLock(page);
 }
 
+async function solveLocation(page: Page): Promise<void> {
+  await page.locator('[data-direction-button="0"]').click();
+  await page.locator('[data-direction-button="1"]').click({ clickCount: 2 });
+  await page.locator('[data-direction-button="2"]').click();
+  await page.getByRole("button", { name: "Position prüfen" }).click();
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Was ist in der Box?",
+    "Hol sie nach Hause.",
   );
 });
 
@@ -76,38 +83,37 @@ test("restores all systems and reveals the final transmission", async ({
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading")).toHaveText("Archivbruch erkannt.");
-  await dialog
-    .getByRole("button", { name: "Übertragung rekonstruieren" })
-    .click();
+  await expect(dialog.getByRole("heading")).toHaveText("Nachricht gefunden.");
+  await dialog.getByRole("button", { name: "Nachricht abspielen" }).click();
   await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
-    "Das ist keine Black Box.",
+    "Sie leben.",
   );
-  await expect(dialog).toContainText(
-    "Die vier Systeme sind keine Reparaturpfade",
-  );
+  await expect(dialog).toContainText("Asteria an jeden, der uns hört");
   await expect(
-    dialog.getByRole("heading", { name: "Das war keine Reparatur." }),
+    dialog.getByRole("heading", { name: "Findet ihren Standort." }),
   ).toBeVisible();
-  await dialog.getByRole("button", { name: "Kontakt herstellen" }).click();
+  await solveLocation(page);
+  await expect(dialog.getByRole("heading")).toHaveText("Hol sie nach Hause.");
+  await dialog.getByRole("button", { name: "Rettungssignal senden" }).click();
   await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
     "data-rendering",
     "true",
   );
-  await expect(dialog.getByRole("heading")).toHaveText("Kontakt hergestellt.");
-  await expect(dialog).toContainText("ORIGIN: THIS DEVICE");
+  await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
+  await expect(dialog).toContainText("6 VON 6 LEVELS ABGESCHLOSSEN");
+  await expect(dialog).toContainText("Du bist fertig");
   await dialog
     .getByRole("button", { name: "Zur veränderten Maschine" })
     .click();
   await expect(
     page.locator('[data-module="memory"] [data-module-status]'),
-  ).toHaveText("EXPOSED");
+  ).toHaveText("RESTORED");
   await expect(page.locator("[data-system-state]")).toHaveText(
-    "CONTAINMENT LOST",
+    "MISSION COMPLETE",
   );
 });
 
-test("offers a distinct shutdown ending and keeps the finale accessible", async ({
+test("explains mistakes, completes the rescue and keeps the finale accessible", async ({
   page,
   browserName,
 }) => {
@@ -116,14 +122,15 @@ test("offers a distinct shutdown ending and keeps the finale accessible", async 
   await reachFinale(page);
 
   const dialog = page.getByRole("dialog");
-  await dialog
-    .getByRole("button", { name: "Übertragung rekonstruieren" })
-    .click();
-  await dialog.getByRole("button", { name: "Notabschaltung" }).click();
-  await expect(dialog.getByRole("heading")).toHaveText(
-    "Notabschaltung fehlgeschlagen.",
+  await dialog.getByRole("button", { name: "Nachricht abspielen" }).click();
+  await page.getByRole("button", { name: "Position prüfen" }).click();
+  await expect(dialog).toContainText(
+    "Alle drei Pfeile müssen zur leuchtenden Mitte zeigen",
   );
-  await expect(dialog).toContainText("CONTAINMENT: EMPTY");
+  await solveLocation(page);
+  await dialog.getByRole("button", { name: "Rettungssignal senden" }).click();
+  await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
+  await expect(dialog).toContainText("Rettung kennt jetzt ihre Position");
   await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
     "data-rendering",
     "true",

@@ -1,10 +1,7 @@
-export type AnomalyMode = "contact" | "shutdown";
-
 export class AnomalyRenderer {
   private readonly context: CanvasRenderingContext2D;
   private frame = 0;
   private startedAt = 0;
-  private mode: AnomalyMode = "contact";
   private width = 0;
   private height = 0;
   private dpr = 1;
@@ -19,9 +16,8 @@ export class AnomalyRenderer {
     return this.canvas.dataset.rendering === "true";
   }
 
-  public start(mode: AnomalyMode): void {
+  public start(): void {
     this.stop();
-    this.mode = mode;
     this.resize();
     this.canvas.dataset.rendering = "true";
 
@@ -73,7 +69,7 @@ export class AnomalyRenderer {
     const shortSide = Math.min(this.width, this.height);
     const progress = Math.min(1, elapsed / 3_200);
     const pulse = (Math.sin(elapsed * 0.004) + 1) / 2;
-    const accent = this.mode === "contact" ? "99, 255, 190" : "255, 107, 81";
+    const accent = "99, 255, 190";
 
     context.fillStyle = `rgba(2, 5, 4, ${progress < 0.35 ? 0.34 : 0.18})`;
     context.fillRect(0, 0, this.width, this.height);
@@ -122,7 +118,7 @@ export class AnomalyRenderer {
     }
 
     context.setLineDash([]);
-    const rays = this.mode === "contact" ? 18 : 11;
+    const rays = 18;
     for (let ray = 0; ray < rays; ray += 1) {
       const angle = (ray / rays) * Math.PI * 2 + elapsed * 0.00008;
       const inner = shortSide * (0.11 + ((ray * 7) % 5) * 0.012);
@@ -147,42 +143,18 @@ export class AnomalyRenderer {
     context.lineWidth = 2;
     context.stroke();
 
-    if (this.mode === "contact") {
-      context.scale(1, 0.34 + pulse * 0.1);
-      context.beginPath();
-      context.arc(0, 0, shortSide * 0.045, 0, Math.PI * 2);
-      context.fillStyle = `rgba(${accent}, 0.78)`;
-      context.shadowColor = `rgb(${accent})`;
-      context.shadowBlur = 30;
-      context.fill();
-      context.beginPath();
-      context.arc(0, 0, shortSide * 0.017, 0, Math.PI * 2);
-      context.fillStyle = "#000";
-      context.shadowBlur = 0;
-      context.fill();
-    } else {
-      context.strokeStyle = `rgba(${accent}, 0.9)`;
-      context.lineWidth = 3;
-      for (let fracture = 0; fracture < 8; fracture += 1) {
-        const angle = (fracture / 8) * Math.PI * 2 + 0.2;
-        context.beginPath();
-        context.moveTo(
-          Math.cos(angle) * shortSide * 0.06,
-          Math.sin(angle) * shortSide * 0.06,
-        );
-        context.lineTo(
-          Math.cos(angle + 0.08) *
-            shortSide *
-            (0.18 + fracture * 0.018) *
-            progress,
-          Math.sin(angle + 0.08) *
-            shortSide *
-            (0.18 + fracture * 0.018) *
-            progress,
-        );
-        context.stroke();
-      }
-    }
+    context.scale(1, 0.34 + pulse * 0.1);
+    context.beginPath();
+    context.arc(0, 0, shortSide * 0.045, 0, Math.PI * 2);
+    context.fillStyle = `rgba(${accent}, 0.78)`;
+    context.shadowColor = `rgb(${accent})`;
+    context.shadowBlur = 30;
+    context.fill();
+    context.beginPath();
+    context.arc(0, 0, shortSide * 0.017, 0, Math.PI * 2);
+    context.fillStyle = "#000";
+    context.shadowBlur = 0;
+    context.fill();
 
     context.restore();
   }

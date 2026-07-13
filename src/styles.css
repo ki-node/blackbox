@@ -297,7 +297,6 @@ main {
   position: sticky;
   z-index: 8;
   top: 0;
-  margin-inline: calc(var(--safe-left) * -1) calc(var(--safe-right) * -1);
   padding: 0.65rem var(--safe-right) 0.65rem var(--safe-left);
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);

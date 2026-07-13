@@ -119,10 +119,22 @@ test("reflows at 320 CSS pixels without horizontal clipping", async ({
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
+    offenders: [...document.querySelectorAll<HTMLElement>("body *")]
+      .map((element) => ({
+        selector: `${element.tagName.toLowerCase()}.${element.className}`,
+        left: Math.round(element.getBoundingClientRect().left),
+        right: Math.round(element.getBoundingClientRect().right),
+      }))
+      .filter(
+        ({ left, right }) =>
+          left < -1 || right > document.documentElement.clientWidth + 1,
+      )
+      .slice(0, 10),
   }));
-  expect(dimensions.scrollWidth).toBeLessThanOrEqual(
-    dimensions.clientWidth + 1,
-  );
+  expect(
+    dimensions.scrollWidth,
+    JSON.stringify(dimensions.offenders),
+  ).toBeLessThanOrEqual(dimensions.clientWidth + 1);
 
   for (const control of [
     page.getByRole("button", { name: /R1 AUS/ }),

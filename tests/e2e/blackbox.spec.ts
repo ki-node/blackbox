@@ -175,6 +175,14 @@ test("lets the player control every story page and ends with a clear answer", as
   );
   await expect(finale).toContainText("Sechsunddreißig Menschen leben");
   await expect(finale).toContainText("DU BIST FERTIG");
+
+  await finale.getByRole("button", { name: "Zur Übersicht" }).click();
+  await expect(finale).toBeHidden();
+  await expect(page.locator("[data-complete-panel]")).toBeVisible();
+  await expect(page.locator(".game-actions")).toBeHidden();
+  await expect(
+    page.getByRole("button", { name: "Finale erneut ansehen" }),
+  ).toBeInViewport();
 });
 
 test("provides large slider targets, step buttons and immediate feedback", async ({

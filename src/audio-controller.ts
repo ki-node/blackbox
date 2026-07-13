@@ -1,3 +1,5 @@
+import type { SymbolName } from "./game-engine";
+
 interface OscillatorCue {
   duration: number;
   endFrequency?: number;
@@ -35,19 +37,30 @@ export class AudioController {
     if (!context) return;
     const now = context.currentTime;
     this.noise(context, now, {
-      duration: 0.045,
-      frequency: active ? 2_800 : 1_900,
-      endFrequency: 520,
+      duration: 0.035,
+      frequency: 3_200,
+      endFrequency: 780,
       type: "bandpass",
-      volume: 0.055,
+      volume: 0.04,
     });
     this.oscillator(context, now, {
-      duration: active ? 0.075 : 0.1,
-      frequency: active ? 74 : 58,
-      endFrequency: 34,
-      type: "square",
-      volume: 0.022,
+      start: 0.018,
+      duration: 0.14,
+      frequency: 392,
+      endFrequency: active ? 587 : 247,
+      type: "triangle",
+      volume: 0.032,
     });
+    if (active) {
+      this.oscillator(context, now, {
+        start: 0.075,
+        duration: 0.14,
+        frequency: 587,
+        endFrequency: 784,
+        type: "sine",
+        volume: 0.024,
+      });
+    }
   }
 
   public ratchet(position: number): void {
@@ -75,19 +88,19 @@ export class AudioController {
     if (!context) return;
     const now = context.currentTime;
     this.oscillator(context, now, {
-      duration: 0.34,
-      frequency: 118,
-      endFrequency: 43,
-      type: "sawtooth",
-      volume: 0.026,
+      duration: 0.16,
+      frequency: 233,
+      endFrequency: 185,
+      type: "square",
+      volume: 0.022,
     });
-    this.noise(context, now, {
-      start: 0.06,
-      duration: 0.22,
-      frequency: 760,
-      endFrequency: 120,
-      type: "lowpass",
-      volume: 0.03,
+    this.oscillator(context, now, {
+      start: 0.17,
+      duration: 0.24,
+      frequency: 147,
+      endFrequency: 98,
+      type: "sawtooth",
+      volume: 0.025,
     });
   }
 
@@ -95,48 +108,83 @@ export class AudioController {
     const context = this.activeContext();
     if (!context) return;
     const now = context.currentTime;
-    this.noise(context, now, {
-      duration: 0.38,
-      frequency: 180,
-      endFrequency: 3_400,
-      type: "bandpass",
-      volume: 0.035,
-    });
-    [64, 96, 145].forEach((frequency, index) => {
+    const offset = level * 12;
+    [392, 523, 659].forEach((frequency, index) => {
       this.oscillator(context, now, {
-        start: index * 0.055,
-        duration: 0.42,
-        frequency: frequency + level * 7,
-        endFrequency: frequency * 1.28 + level * 9,
-        type: index === 0 ? "sawtooth" : "triangle",
-        volume: index === 0 ? 0.024 : 0.014,
+        start: index * 0.105,
+        duration: 0.24,
+        frequency: frequency + offset,
+        endFrequency: frequency + offset,
+        type: index === 2 ? "sine" : "triangle",
+        volume: 0.027,
       });
     });
   }
 
-  public memory(symbolIndex: number, matched = true): void {
-    const context = this.activeContext();
-    if (!context) return;
+  public memory(symbol: SymbolName, matched = true): void {
     if (!matched) {
       this.error();
       return;
     }
+    const context = this.activeContext();
+    if (!context) return;
     const now = context.currentTime;
-    const frequency = 210 + symbolIndex * 76;
-    this.oscillator(context, now, {
-      duration: 0.19,
-      frequency,
-      endFrequency: frequency * 0.985,
-      type: "sine",
-      volume: 0.034,
+
+    if (symbol === "triangle") {
+      this.oscillator(context, now, {
+        duration: 0.2,
+        frequency: 880,
+        endFrequency: 1_046,
+        type: "triangle",
+        volume: 0.032,
+      });
+      return;
+    }
+    if (symbol === "diamond") {
+      this.oscillator(context, now, {
+        duration: 0.14,
+        frequency: 622,
+        type: "sine",
+        volume: 0.032,
+      });
+      this.oscillator(context, now, {
+        start: 0.11,
+        duration: 0.18,
+        frequency: 932,
+        type: "sine",
+        volume: 0.028,
+      });
+      return;
+    }
+    if (symbol === "circle") {
+      this.oscillator(context, now, {
+        duration: 0.38,
+        frequency: 294,
+        type: "sine",
+        volume: 0.038,
+      });
+      this.oscillator(context, now, {
+        duration: 0.32,
+        frequency: 147,
+        type: "sine",
+        volume: 0.015,
+      });
+      return;
+    }
+
+    this.noise(context, now, {
+      duration: 0.055,
+      frequency: 2_600,
+      endFrequency: 420,
+      type: "bandpass",
+      volume: 0.04,
     });
     this.oscillator(context, now, {
-      start: 0.015,
-      duration: 0.13,
-      frequency: frequency * 2.72,
-      endFrequency: frequency * 2.2,
-      type: "triangle",
-      volume: 0.009,
+      duration: 0.11,
+      frequency: 440,
+      endFrequency: 392,
+      type: "square",
+      volume: 0.023,
     });
   }
 

@@ -149,6 +149,26 @@ test("persists progress locally across reloads", async ({ page }) => {
   );
 });
 
+test("routes recovery energy through the machine and reacts to touch", async ({
+  page,
+}) => {
+  await solvePower(page);
+
+  const machine = page.locator("[data-machine]");
+  await expect(page.locator("html")).toHaveAttribute("data-stage", "signal");
+  await expect(machine).toHaveCSS("--recovery-progress", "0.25");
+  const restoredNode = page.locator('[data-bus-node="power"] i');
+  await expect(restoredNode).toHaveCSS("background-color", "rgb(99, 255, 190)");
+
+  await machine.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    clientX: 120,
+    clientY: 240,
+  });
+  await expect(machine).toHaveClass(/is-impact/);
+  await expect(machine).toHaveCSS("--pointer-x", /%/);
+});
+
 test("resets only after explicit confirmation", async ({ page }) => {
   await solvePower(page);
   const reset = page.getByRole("button", { name: "Zurücksetzen" });
@@ -243,4 +263,13 @@ test("honours reduced motion and supports keyboard activation", async ({
   await relay.focus();
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "true");
+
+  const machine = page.locator("[data-machine]");
+  await machine.dispatchEvent("pointermove", {
+    pointerType: "mouse",
+    clientX: 40,
+    clientY: 180,
+  });
+  await expect(machine).toHaveCSS("--machine-rx", "0deg");
+  await expect(machine).toHaveCSS("--machine-ry", "0deg");
 });

@@ -99,7 +99,7 @@ export class FinaleController {
     this.clearTimers();
     this.showScreen("transmission");
     document.documentElement.dataset.anomaly = "calibrating";
-    this.audio.tone(64, 0.5, 0.045);
+    this.audio.impact(64, 0.5, 0.045);
     this.schedule(() => this.audio.tone(192, 0.3, 0.035), 120);
 
     const reducedMotion = window.matchMedia(

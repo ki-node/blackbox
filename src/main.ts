@@ -1,6 +1,7 @@
 import "./styles.css";
 import { AudioController } from "./audio-controller";
 import { FinaleController } from "./finale-controller";
+import { MachineEffectsController } from "./machine-effects-controller";
 import {
   MEMORY_SEQUENCE,
   createInitialState,
@@ -65,6 +66,9 @@ function requireElement<T extends Element>(
 class BlackBoxApp {
   private state = restoreState(localStorage.getItem(STORAGE_KEY));
   private readonly audio = new AudioController();
+  private readonly effects = new MachineEffectsController(
+    requireElement<HTMLElement>("[data-machine]"),
+  );
   private readonly scope: ScopeRenderer;
   private readonly status = requireElement<HTMLElement>("[data-status]");
   private readonly systemState = requireElement<HTMLElement>(
@@ -303,6 +307,8 @@ class BlackBoxApp {
       solved: { ...this.state.solved, lock: true },
     };
     this.persistAndRender();
+    this.effects.surge("lock");
+    this.audio.impact(68, 0.42, 0.055);
     this.setStatus(stageCopy.complete);
     [220, 330, 440, 660].forEach((frequency, index) => {
       window.setTimeout(() => this.audio.tone(frequency, 0.24), index * 140);
@@ -311,6 +317,12 @@ class BlackBoxApp {
   }
 
   private advance(stage: Exclude<Stage, "power" | "complete">): void {
+    const completedStage = {
+      signal: "power",
+      memory: "signal",
+      lock: "memory",
+    }[stage] as Exclude<Stage, "complete">;
+    this.effects.surge(completedStage);
     this.persistAndRender();
     this.setStatus(stageCopy[stage]);
     window.setTimeout(
@@ -454,6 +466,7 @@ class BlackBoxApp {
       if (name === stage) progress.setAttribute("aria-current", "step");
       else progress.removeAttribute("aria-current");
     });
+    this.effects.updateProgress(this.completedCount());
 
     if (this.state.hints > 0 && stage !== "complete") {
       this.hintText.textContent =
@@ -488,6 +501,7 @@ class BlackBoxApp {
     this.status
       .closest(".machine__display")
       ?.classList.toggle("is-error", error);
+    if (error) this.effects.reject();
   }
 
   private persistAndRender(updateStatus = true): void {
@@ -520,6 +534,7 @@ class BlackBoxApp {
     this.cleanup.forEach((remove) => remove());
     this.scope.destroy();
     this.finale.destroy();
+    this.effects.destroy();
     this.audio.destroy();
   }
 }

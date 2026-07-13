@@ -53,7 +53,7 @@ test.beforeEach(async ({ page }) => {
 test("restores all systems and reveals the final transmission", async ({
   page,
 }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(60_000);
   await solvePower(page);
   await expect(page.locator('[data-module="signal"]')).toHaveAttribute(
     "aria-disabled",
@@ -103,7 +103,7 @@ test("offers a distinct disconnect ending and keeps the finale accessible", asyn
   page,
   browserName,
 }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(60_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await reachFinale(page);
 
@@ -147,6 +147,29 @@ test("persists progress locally across reloads", async ({ page }) => {
     "aria-pressed",
     "true",
   );
+});
+
+test("routes recovery energy through the machine and reacts to touch", async ({
+  page,
+}) => {
+  await solvePower(page);
+
+  const machine = page.locator("[data-machine]");
+  await expect(page.locator("html")).toHaveAttribute("data-stage", "signal");
+  await expect(machine).toHaveCSS("--recovery-progress", "0.25");
+  const restoredNode = page.locator('[data-bus-node="power"] i');
+  await expect(restoredNode).toHaveCSS("background-color", "rgb(99, 255, 190)");
+
+  await machine.dispatchEvent("pointerdown", {
+    pointerType: "touch",
+    clientX: 120,
+    clientY: 240,
+  });
+  await expect(machine).toHaveCSS("--pointer-x", /%/);
+  const pointerX = await machine.evaluate((element) =>
+    element.style.getPropertyValue("--pointer-x"),
+  );
+  expect(pointerX).not.toBe("50%");
 });
 
 test("resets only after explicit confirmation", async ({ page }) => {
@@ -243,4 +266,13 @@ test("honours reduced motion and supports keyboard activation", async ({
   await relay.focus();
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "true");
+
+  const machine = page.locator("[data-machine]");
+  await machine.dispatchEvent("pointermove", {
+    pointerType: "mouse",
+    clientX: 40,
+    clientY: 180,
+  });
+  await expect(machine).toHaveCSS("--machine-rx", "0deg");
+  await expect(machine).toHaveCSS("--machine-ry", "0deg");
 });

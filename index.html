@@ -72,7 +72,12 @@
         </ol>
       </nav>
 
-      <section class="machine" id="machine" aria-labelledby="machine-title">
+      <section
+        class="machine"
+        id="machine"
+        data-machine
+        aria-labelledby="machine-title"
+      >
         <div class="machine__topline">
           <div>
             <p class="machine__serial">FLIGHT RECORDER // XB-04</p>
@@ -94,6 +99,14 @@
           <p data-status>
             Notstromkreis unterbrochen. Relaisstellung rekonstruieren.
           </p>
+        </div>
+
+        <div class="energy-bus" aria-hidden="true">
+          <div class="energy-bus__track"><i></i></div>
+          <span data-bus-node="power"><b>01</b><i></i></span>
+          <span data-bus-node="signal"><b>02</b><i></i></span>
+          <span data-bus-node="memory"><b>03</b><i></i></span>
+          <span data-bus-node="lock"><b>04</b><i></i></span>
         </div>
 
         <div class="machine__grid">

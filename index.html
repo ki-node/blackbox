@@ -424,6 +424,12 @@
           <span>CHANNEL 04:17:09</span>
         </div>
 
+        <canvas
+          class="anomaly-canvas"
+          data-anomaly-canvas
+          aria-hidden="true"
+        ></canvas>
+
         <div class="transmission__core" aria-hidden="true">
           <i></i><i></i><i></i>
           <span>04</span>
@@ -456,74 +462,80 @@
           hidden
         >
           <p class="eyebrow">TRANSMISSION RECOVERED / 04:17:09</p>
-          <h2 tabindex="-1">Die Box war nie leer.</h2>
+          <h2 tabindex="-1">Das ist keine Black Box.</h2>
           <ol class="transcript" aria-label="Rekonstruierte Übertragung">
             <li data-transcript-line hidden>
               <time datetime="04:17:09">04:17:09</time>
-              <p>„Bergungsteam an Basis. Kein Aufprall registriert.“</p>
+              <p>„Kein Aufprall. Das ist kein Flugschreiber.“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:12">04:17:12</time>
-              <p>„Keine Außenquelle. Das Signal kommt aus dem Inneren.“</p>
+              <p>„Die vier Systeme sind keine Reparaturpfade.“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:15">04:17:15</time>
-              <p>„Es wartet nicht auf einen Code. Es wartet auf ein Muster.“</p>
+              <p>„Es sind Sicherungen. Bitte nicht alle vier—“</p>
             </li>
             <li data-transcript-line hidden>
               <time datetime="04:17:18">04:17:18</time>
-              <p>
-                „Falls du das hörst, hat die Kalibrierung bereits begonnen.“
-              </p>
+              <p>„Wenn alle Anzeigen grün sind, ist es bereits zu spät.“</p>
             </li>
           </ol>
 
           <div class="calibration" data-calibration hidden>
-            <p class="calibration__code">OPERATOR PATTERN ACQUIRED</p>
+            <p class="calibration__code">
+              CONTAINMENT INTERLOCKS: 4/4 RELEASED
+            </p>
             <h3 id="calibration-title" data-calibration-title tabindex="-1">
-              Kalibrierung abgeschlossen.
+              Das war keine Reparatur.
             </h3>
             <p>
-              Du hast die Box nicht repariert. Du hast ihr beigebracht, wie du
-              suchst.
+              Du hast jede Sicherung einzeln aufgehoben. Etwas im Kern benutzt
+              nun dieselben Systeme als Ausgang.
             </p>
             <div class="calibration__readout" aria-hidden="true">
-              <span>BEHAVIOR</span><b>LEARNED</b> <span>AUTHORIZATION</span
-              ><b>GRANTED</b> <span>REMOTE LINK</span><b>READY</b>
+              <span>CONTAINMENT</span><b>RELEASED</b> <span>ORIGIN</span
+              ><b>UNKNOWN</b> <span>PROXIMITY</span><b>0.0 M</b>
             </div>
             <fieldset class="finale-choice">
-              <legend>Der Kanal ist offen. Was soll die Box tun?</legend>
+              <legend>Der Kern reagiert. Letzter manueller Eingriff:</legend>
               <button
                 class="secondary-button"
                 type="button"
-                data-finale-choice="disconnect"
+                data-finale-choice="shutdown"
               >
-                Verbindung trennen
+                Notabschaltung
               </button>
               <button
                 class="action-button"
                 type="button"
-                data-finale-choice="answer"
+                data-finale-choice="contact"
               >
-                Antworten
+                Kontakt herstellen
               </button>
             </fieldset>
           </div>
         </section>
 
         <section
-          class="finale-screen finale-screen--ending"
+          class="finale-screen finale-screen--ending finale-screen--event"
           data-finale-screen="ending"
           hidden
         >
-          <p class="eyebrow">FINAL CHANNEL STATE</p>
-          <h2 data-ending-title tabindex="-1">Antwort empfangen.</h2>
-          <p class="finale-screen__lead" data-ending-copy></p>
-          <div class="ending-pulse" aria-hidden="true">
-            <span></span><i></i><span></span>
+          <div class="event-copy">
+            <p
+              class="eyebrow event-copy__kicker"
+              data-event-kicker
+              role="status"
+              aria-live="assertive"
+            >
+              FINAL CHANNEL STATE
+            </p>
+            <h2 data-ending-title tabindex="-1">Kontakt hergestellt.</h2>
+            <p class="finale-screen__lead" data-ending-copy></p>
+            <p class="transmission__meta" data-ending-code></p>
           </div>
-          <p class="transmission__meta" data-ending-code></p>
-          <div class="transmission__actions">
+          <div class="transmission__actions" data-ending-actions hidden>
             <button class="action-button" type="button" data-close-transmission>
               Zur veränderten Maschine
             </button>

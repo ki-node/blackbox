@@ -233,7 +233,7 @@ class BlackBoxApp {
         const echo = requireElement<HTMLElement>(`[data-echo="${symbol}"]`);
         echo.classList.add("is-active");
         this.echoAnnouncement.textContent = `Impuls ${index + 1}: ${symbolLabels[symbol]}`;
-        this.audio.memory(index);
+        this.audio.memory(symbol);
         const offTimer = window.setTimeout(
           () => echo.classList.remove("is-active"),
           330,
@@ -259,7 +259,7 @@ class BlackBoxApp {
   private enterSymbol(symbol: SymbolName): void {
     const result = enterMemorySymbol(this.state, symbol);
     this.state = result.state;
-    this.audio.memory(this.state.memoryProgress, result.matched);
+    this.audio.memory(symbol, result.matched);
 
     if (!result.matched) {
       this.setStatus("Echo abgebrochen. Die Folge beginnt von vorn.", true);

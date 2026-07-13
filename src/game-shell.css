@@ -855,6 +855,10 @@ button[data-feedback="tap"],
   text-transform: uppercase;
 }
 
+html[data-stage="complete"] .game-actions {
+  display: none;
+}
+
 .text-button {
   min-height: 1.8rem;
   padding: 0 0.65rem;

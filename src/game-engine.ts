@@ -19,7 +19,8 @@ export const ROUTE_TILES = [
   "straight",
   "straight",
 ] as const;
-export const ROUTE_TARGET = [0, 0, 1, 2, 0, 0, 3, 0, 0] as const;
+export const ROUTE_PATH = [0, 1, 2, 5, 4, 3, 6, 7, 8] as const;
+export const ROUTE_TARGET = [0, 0, 1, 0, 0, 2, 3, 0, 0] as const;
 export const BALANCE_TARGET = [2, 3, 3, 4] as const;
 export const LOCK_TARGET = [3, 7, 5, 4, 2] as const;
 
@@ -36,6 +37,7 @@ export type SymbolName = (typeof MEMORY_SEQUENCE)[number];
 export type PuzzleStage = (typeof GAME_STAGES)[number];
 export type Stage = PuzzleStage | "complete";
 export type RouteTile = (typeof ROUTE_TILES)[number];
+export type RouteDirection = "up" | "right" | "down" | "left";
 
 export interface SignalSettings {
   carrier: number;
@@ -123,13 +125,38 @@ export function isRouteTileCorrect(
   );
 }
 
-export function routePowerLength(route: readonly number[]): number {
-  let powered = 0;
-  for (let index = 0; index < ROUTE_TARGET.length; index += 1) {
+export function routeConnections(
+  tile: RouteTile,
+  orientation: number,
+): readonly RouteDirection[] {
+  const normalized = normalizeRouteOrientation(tile, orientation);
+  if (tile === "straight") {
+    return normalized === 0 ? ["left", "right"] : ["up", "down"];
+  }
+
+  return (
+    (
+      [
+        ["right", "down"],
+        ["left", "down"],
+        ["left", "up"],
+        ["right", "up"],
+      ] as const
+    )[normalized] ?? ["right", "down"]
+  );
+}
+
+export function routePoweredTiles(route: readonly number[]): number[] {
+  const powered: number[] = [];
+  for (const index of ROUTE_PATH) {
     if (!isRouteTileCorrect(index, route[index] ?? -1)) break;
-    powered += 1;
+    powered.push(index);
   }
   return powered;
+}
+
+export function routePowerLength(route: readonly number[]): number {
+  return routePoweredTiles(route).length;
 }
 
 export function isRouteCorrect(route: readonly number[]): boolean {

@@ -19,6 +19,7 @@ import {
   isSignalCorrect,
   restoreState,
   routePowerLength,
+  routePoweredTiles,
   signalDistance,
   type PuzzleStage,
   type RouteTile,
@@ -69,11 +70,6 @@ const routeDescriptions: Record<RouteTile, readonly string[]> = {
   ],
 };
 
-const routeGlyphs: Record<RouteTile, readonly string[]> = {
-  straight: ["━", "┃"],
-  corner: ["┏", "┓", "┛", "┗"],
-};
-
 const hints: Record<PuzzleStage, readonly [string, string]> = {
   power: [
     "Gefüllte Kreise in der Gravur bedeuten EIN, leere Kreise AUS.",
@@ -88,8 +84,8 @@ const hints: Record<PuzzleStage, readonly [string, string]> = {
     "Dreieck, Raute, Kreis, Dreieck, Quadrat.",
   ],
   route: [
-    "Strom leuchtet nur bis zur ersten falsch gedrehten Kachel. Folge dem grünen Weg.",
-    "Oben nach rechts, rechts hinunter, in der Mitte zurück nach links, dann unten zum Ausgang.",
+    "Beginne bei IN oben links. Grüne Kacheln sind bereits richtig verbunden; die erste graue Kachel unterbricht den Strom.",
+    "Der Weg läuft oben nach rechts, rechts eine Reihe hinunter, in der Mitte zurück nach links und unten wieder nach rechts zu OUT.",
   ],
   balance: [
     "Beginne mit den gleichen mittleren Kammern. Links ist eins weniger, rechts das Doppelte von links.",
@@ -460,7 +456,11 @@ class BlackBoxApp {
     route[index] = ((route[index] ?? 0) + 1) % 4;
     this.state = { ...this.state, route };
     const powered = routePowerLength(route);
-    this.feedback.route(button, index, index < powered);
+    this.feedback.route(
+      button,
+      index,
+      routePoweredTiles(route).includes(index),
+    );
     this.persistAndRender();
     this.setStatus(
       powered === 0
@@ -749,7 +749,8 @@ class BlackBoxApp {
         ),
       );
 
-    const powered = routePowerLength(this.state.route);
+    const poweredTiles = routePoweredTiles(this.state.route);
+    const powered = poweredTiles.length;
     document
       .querySelectorAll<HTMLButtonElement>("[data-route]")
       .forEach((button, index) => {
@@ -757,8 +758,9 @@ class BlackBoxApp {
         const orientation = this.state.route[index] ?? 0;
         const normalized =
           tile === "straight" ? orientation % 2 : orientation % 4;
-        button.textContent = routeGlyphs[tile][normalized] ?? "━";
-        button.classList.toggle("is-powered", index < powered);
+        button.dataset.tile = tile;
+        button.dataset.orientation = String(normalized);
+        button.classList.toggle("is-powered", poweredTiles.includes(index));
         button.setAttribute(
           "aria-label",
           `Leitung ${index + 1} drehen, aktuell ${routeDescriptions[tile][normalized]}`,

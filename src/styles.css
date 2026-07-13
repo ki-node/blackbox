@@ -56,10 +56,12 @@ input {
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 button {
   color: inherit;
+  user-select: none;
 }
 
 button:focus-visible,
@@ -894,6 +896,7 @@ input[type="range"] {
   margin: 0;
   accent-color: var(--green);
   cursor: ew-resize;
+  touch-action: pan-y;
 }
 
 .roman-clue {

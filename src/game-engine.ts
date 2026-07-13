@@ -4,8 +4,9 @@ export const MEMORY_SEQUENCE = [
   "triangle",
   "diamond",
   "circle",
-  "triangle",
   "square",
+  "triangle",
+  "circle",
 ] as const;
 
 export const ROUTE_TILES = [
@@ -22,7 +23,7 @@ export const ROUTE_TILES = [
 export const ROUTE_PATH = [0, 1, 2, 5, 4, 3, 6, 7, 8] as const;
 export const ROUTE_TARGET = [0, 0, 1, 0, 0, 2, 3, 0, 0] as const;
 export const BALANCE_TARGET = [2, 3, 3, 4] as const;
-export const LOCK_TARGET = [3, 7, 5, 4, 2] as const;
+export const LOCK_TARGET = [3, 7, 6, 4, 2] as const;
 
 export const GAME_STAGES = [
   "power",

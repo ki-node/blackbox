@@ -642,9 +642,22 @@ button[data-feedback="tap"],
   font:
     700 0.5rem/1 ui-monospace,
     monospace;
+  white-space: nowrap;
+}
+
+.route-port b {
+  color: var(--amber);
+  font-size: 0.8rem;
+}
+
+.route-port--in {
+  align-self: start;
+  margin-top: calc(16.667% - 0.25rem);
 }
 
 .route-port--out {
+  align-self: end;
+  margin-bottom: calc(16.667% - 0.25rem);
   text-align: right;
 }
 
@@ -657,23 +670,73 @@ button[data-feedback="tap"],
 }
 
 .route-grid button {
-  display: grid;
+  position: relative;
   min-width: 0;
   min-height: 0;
-  place-items: center;
+  overflow: hidden;
   padding: 0;
   border: 1px solid var(--line);
   color: #647069;
   background: #0a0e0c;
-  font:
-    clamp(2rem, 12vw, 4rem) / 1 ui-monospace,
-    monospace;
+}
+
+.route-grid button i {
+  --pipe-size: clamp(0.28rem, 1.8vw, 0.48rem);
+
+  position: absolute;
+  inset: 0;
+  color: inherit;
+  transform: rotate(calc(var(--route-turn, 0) * 90deg));
+  transition: transform 180ms ease-out;
+}
+
+.route-grid button[data-orientation="1"] {
+  --route-turn: 1;
+}
+
+.route-grid button[data-orientation="2"] {
+  --route-turn: 2;
+}
+
+.route-grid button[data-orientation="3"] {
+  --route-turn: 3;
+}
+
+.route-grid button i::before,
+.route-grid button i::after {
+  position: absolute;
+  content: "";
+  background: currentcolor;
+  box-shadow: 0 0 0.5rem currentcolor;
+}
+
+.route-grid button[data-tile="straight"] i::before {
+  top: 50%;
+  right: -1px;
+  left: -1px;
+  height: var(--pipe-size);
+  transform: translateY(-50%);
+}
+
+.route-grid button[data-tile="corner"] i::before {
+  top: 50%;
+  right: -1px;
+  left: 50%;
+  height: var(--pipe-size);
+  transform: translateY(-50%);
+}
+
+.route-grid button[data-tile="corner"] i::after {
+  top: 50%;
+  bottom: -1px;
+  left: 50%;
+  width: var(--pipe-size);
+  transform: translateX(-50%);
 }
 
 .route-grid button.is-powered {
   color: var(--green);
   background: rgba(99, 255, 190, 0.08);
-  text-shadow: 0 0 1rem rgba(99, 255, 190, 0.9);
 }
 
 .route-status {
@@ -1348,7 +1411,8 @@ button[data-feedback="tap"],
     animation: none;
   }
 
-  .balance-cell > i span {
+  .balance-cell > i span,
+  .route-grid button i {
     transition: none;
   }
 }

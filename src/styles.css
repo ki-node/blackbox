@@ -72,9 +72,9 @@ input:focus,
   outline: none;
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible {
+html[data-input-modality="keyboard"] button:focus,
+html[data-input-modality="keyboard"] a:focus,
+html[data-input-modality="keyboard"] input:focus {
   outline: 3px solid var(--amber);
   outline-offset: 4px;
 }

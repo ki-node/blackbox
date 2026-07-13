@@ -469,6 +469,10 @@ test("honours reduced motion and keyboard activation", async ({ page }) => {
   const relay = page.locator('[data-relay="0"]');
   const heading = page.locator("#power-title");
 
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-input-modality",
+    "pointer",
+  );
   await relay.click();
   await expect(relay).toHaveCSS("outline-style", "none");
   await heading.focus();
@@ -480,8 +484,29 @@ test("honours reduced motion and keyboard activation", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "false");
 
+  await relay.click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-input-modality",
+    "pointer",
+  );
+  await expect(relay).toHaveCSS("outline-style", "none");
+
   const animation = await page
     .locator(".atmosphere__beam")
     .evaluate((element) => getComputedStyle(element).animationName);
   expect(animation).toBe("none");
+});
+
+test("returns focus from hints to their trigger without a tap outline", async ({
+  page,
+}) => {
+  const hintButton = page.getByRole("button", { name: "Hinweis" });
+  await hintButton.click();
+  await page
+    .getByRole("dialog", { name: "Hinweis" })
+    .getByRole("button", { name: "Zurück zum Spiel" })
+    .click();
+
+  await expect(hintButton).toBeFocused();
+  await expect(hintButton).toHaveCSS("outline-style", "none");
 });

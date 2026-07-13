@@ -28,6 +28,7 @@ import {
   type SymbolName,
 } from "./game-engine";
 import { InstallController } from "./install-controller";
+import { InputModalityController } from "./input-modality-controller";
 import { MachineEffectsController } from "./machine-effects-controller";
 import { ScopeRenderer } from "./scope-renderer";
 
@@ -145,6 +146,7 @@ function requireElement<T extends Element>(
 }
 
 class BlackBoxApp {
+  private readonly inputModality = new InputModalityController();
   private state = restoreState(localStorage.getItem(STORAGE_KEY));
   private readonly audio = new AudioController();
   private readonly feedback = new FeedbackController(this.audio);
@@ -174,6 +176,7 @@ class BlackBoxApp {
   private isPlaying = false;
 
   public constructor() {
+    this.inputModality.init();
     this.scope = new ScopeRenderer(
       requireElement<HTMLCanvasElement>("[data-scope]"),
       this.state.signal,
@@ -333,7 +336,9 @@ class BlackBoxApp {
     this.listen(requireElement("[data-close-hint]"), "click", () => {
       this.feedback.tap();
       this.hintDialog.close();
-      this.focusCurrentStage();
+      requireElement<HTMLButtonElement>("[data-hint-button]").focus({
+        preventScroll: true,
+      });
     });
 
     this.listen(requireElement("[data-audio]"), "click", () =>
@@ -892,6 +897,7 @@ class BlackBoxApp {
     this.finale.destroy();
     this.effects.destroy();
     this.install.destroy();
+    this.inputModality.destroy();
     this.audio.destroy();
   }
 }

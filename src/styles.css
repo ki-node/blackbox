@@ -2015,6 +2015,7 @@ footer p {
   }
 
   .atmosphere__beam {
+    animation: none;
     transform: translateX(-50%);
   }
 

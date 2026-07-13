@@ -20,7 +20,7 @@ interface NoiseCue {
 
 export class AudioController {
   private context: AudioContext | undefined;
-  private enabled = false;
+  private enabled = true;
 
   public get isEnabled(): boolean {
     return this.enabled;
@@ -30,6 +30,81 @@ export class AudioController {
     this.enabled = !this.enabled;
     if (this.enabled) this.relay(true);
     return this.enabled;
+  }
+
+  public press(): void {
+    const context = this.activeContext();
+    if (!context) return;
+    this.noise(context, context.currentTime, {
+      duration: 0.022,
+      frequency: 2_800,
+      endFrequency: 720,
+      type: "bandpass",
+      volume: 0.018,
+    });
+  }
+
+  public adjust(position: number): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const frequency = 220 + position * 38;
+    this.oscillator(context, context.currentTime, {
+      duration: 0.07,
+      frequency,
+      endFrequency: frequency * 1.04,
+      type: "sine",
+      volume: 0.018,
+    });
+  }
+
+  public route(position: number, powered: boolean): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.noise(context, now, {
+      duration: 0.04,
+      frequency: 1_900 + position * 80,
+      endFrequency: 520,
+      type: "bandpass",
+      volume: 0.03,
+    });
+    this.oscillator(context, now, {
+      start: 0.025,
+      duration: 0.12,
+      frequency: powered ? 392 + position * 16 : 196,
+      endFrequency: powered ? 523 + position * 16 : 174,
+      type: powered ? "sine" : "triangle",
+      volume: 0.022,
+    });
+  }
+
+  public balance(position: number): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const frequency = 164 + position * 54;
+    this.oscillator(context, context.currentTime, {
+      duration: 0.11,
+      frequency,
+      endFrequency: frequency,
+      type: "triangle",
+      volume: 0.024,
+    });
+  }
+
+  public chapter(index: number): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    [330, 440, 554].forEach((frequency, note) => {
+      this.oscillator(context, now, {
+        start: note * 0.13,
+        duration: 0.32,
+        frequency: frequency + index * 9,
+        endFrequency: frequency + index * 9,
+        type: "sine",
+        volume: 0.02,
+      });
+    });
   }
 
   public relay(active: boolean): void {

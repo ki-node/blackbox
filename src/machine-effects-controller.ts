@@ -49,7 +49,7 @@ export class MachineEffectsController {
   public updateProgress(completed: number): void {
     this.machine.style.setProperty(
       "--recovery-progress",
-      String(completed / 4),
+      String(completed / 6),
     );
   }
 

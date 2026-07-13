@@ -51,6 +51,11 @@ export class ScopeRenderer {
     const { width, height } = this.canvas.getBoundingClientRect();
     const context = this.context;
     context.clearRect(0, 0, width, height);
+
+    // The game shell starts hidden. A zero-sized canvas must not enter the
+    // grid loops below because their increment would also be zero.
+    if (width <= 0 || height <= 0) return;
+
     context.fillStyle = "#07100f";
     context.fillRect(0, 0, width, height);
 

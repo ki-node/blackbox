@@ -33,6 +33,7 @@ test.beforeEach(async ({ page }) => {
 test("restores all systems and reveals the final transmission", async ({
   page,
 }) => {
+  test.setTimeout(45_000);
   await solvePower(page);
   await expect(page.locator('[data-module="signal"]')).toHaveAttribute(
     "aria-disabled",

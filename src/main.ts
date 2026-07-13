@@ -409,8 +409,13 @@ class BlackBoxApp {
       },
     );
 
-    document
-      .querySelectorAll<HTMLElement>(".memory-meter i")
+    const memoryMeter = requireElement<HTMLElement>(".memory-meter");
+    memoryMeter.setAttribute(
+      "aria-valuenow",
+      String(this.state.memoryProgress),
+    );
+    memoryMeter
+      .querySelectorAll<HTMLElement>("i")
       .forEach((indicator, index) => {
         indicator.classList.toggle(
           "is-filled",

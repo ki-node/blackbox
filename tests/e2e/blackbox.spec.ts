@@ -48,6 +48,16 @@ async function solveRoute(page: Page): Promise<void> {
   await expect(page.locator("[data-route-status]")).toHaveText(
     "Durchgehende Leitung hergestellt.",
   );
+  const routeLayout = await page.evaluate(() => ({
+    boardBottom: document.querySelector(".route-board")?.getBoundingClientRect()
+      .bottom,
+    actionTop: document
+      .querySelector("[data-check-route]")
+      ?.getBoundingClientRect().top,
+  }));
+  expect(
+    routeLayout.boardBottom ?? Number.POSITIVE_INFINITY,
+  ).toBeLessThanOrEqual((routeLayout.actionTop ?? 0) + 1);
   await page.getByRole("button", { name: "Leitung prüfen" }).click();
   await continueStory(page);
 }

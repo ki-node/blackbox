@@ -21,6 +21,26 @@ async function solveMemory(page: Page): Promise<void> {
   }
 }
 
+async function solveLock(page: Page): Promise<void> {
+  for (let index = 0; index < 3; index += 1) {
+    await page.getByRole("button", { name: "Erste Ziffer erhöhen" }).click();
+  }
+  for (let index = 0; index < 7; index += 1) {
+    await page.getByRole("button", { name: "Zweite Ziffer erhöhen" }).click();
+  }
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByRole("button", { name: "Dritte Ziffer erhöhen" }).click();
+  }
+  await page.getByRole("button", { name: "Black Box öffnen" }).click();
+}
+
+async function reachFinale(page: Page): Promise<void> {
+  await solvePower(page);
+  await solveSignal(page);
+  await solveMemory(page);
+  await solveLock(page);
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto("./");
   await page.evaluate(() => localStorage.clear());
@@ -52,21 +72,55 @@ test("restores all systems and reveals the final transmission", async ({
     "false",
   );
 
-  for (let index = 0; index < 3; index += 1) {
-    await page.getByRole("button", { name: "Erste Ziffer erhöhen" }).click();
-  }
-  for (let index = 0; index < 7; index += 1) {
-    await page.getByRole("button", { name: "Zweite Ziffer erhöhen" }).click();
-  }
-  for (let index = 0; index < 5; index += 1) {
-    await page.getByRole("button", { name: "Dritte Ziffer erhöhen" }).click();
-  }
-  await page.getByRole("button", { name: "Black Box öffnen" }).click();
+  await solveLock(page);
 
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading")).toHaveText("Die Box war nie leer.");
-  await expect(dialog).toContainText("Das Signal kam aus dem Inneren");
+  await expect(dialog.getByRole("heading")).toHaveText("Archivbruch erkannt.");
+  await dialog
+    .getByRole("button", { name: "Übertragung rekonstruieren" })
+    .click();
+  await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
+    "Die Box war nie leer.",
+  );
+  await expect(dialog).toContainText("Das Signal kommt aus dem Inneren");
+  await expect(
+    dialog.getByRole("heading", { name: "Kalibrierung abgeschlossen." }),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "Antworten" }).click();
+  await expect(dialog.getByRole("heading")).toHaveText("Antwort empfangen.");
+  await expect(dialog).toContainText("SECOND DEVICE DETECTED");
+  await dialog
+    .getByRole("button", { name: "Zur veränderten Maschine" })
+    .click();
+  await expect(
+    page.locator('[data-module="memory"] [data-module-status]'),
+  ).toHaveText("LEARNED");
+  await expect(page.locator("[data-system-state]")).toHaveText("LINK ACTIVE");
+});
+
+test("offers a distinct disconnect ending and keeps the finale accessible", async ({
+  page,
+  browserName,
+}) => {
+  test.setTimeout(45_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await reachFinale(page);
+
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByRole("button", { name: "Übertragung rekonstruieren" })
+    .click();
+  await dialog.getByRole("button", { name: "Verbindung trennen" }).click();
+  await expect(dialog.getByRole("heading")).toHaveText("Befehl abgelehnt.");
+  await expect(dialog).toContainText("LINK PERSISTENT");
+
+  if (browserName !== "webkit") {
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  }
 });
 
 test("rejects incorrect settings and provides progressive optional hints", async ({

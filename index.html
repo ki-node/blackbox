@@ -403,24 +403,122 @@
     <dialog
       class="transmission"
       data-transmission
-      aria-labelledby="transmission-title"
+      aria-label="Wiederhergestellte Übertragung"
     >
-      <div class="transmission__signal" aria-hidden="true">
-        <i></i><i></i><i></i><i></i><i></i>
-      </div>
-      <p class="eyebrow">TRANSMISSION RECOVERED / 04:17:09</p>
-      <h2 id="transmission-title">Die Box war nie leer.</h2>
-      <blockquote>
-        „Kein Aufprall. Keine Außenquelle. Das Signal kam aus dem Inneren.“
-      </blockquote>
-      <p class="transmission__meta">ARCHIVE STATUS: ANOMALY CONFIRMED</p>
-      <div class="transmission__actions">
-        <button class="action-button" type="button" data-close-transmission>
-          Maschine untersuchen
-        </button>
-        <button class="secondary-button" type="button" data-restart>
-          Neu starten
-        </button>
+      <div class="transmission__frame">
+        <div class="transmission__topline" aria-hidden="true">
+          <span>XB-04 / SEALED ARCHIVE</span>
+          <span>CHANNEL 04:17:09</span>
+        </div>
+
+        <div class="transmission__core" aria-hidden="true">
+          <i></i><i></i><i></i>
+          <span>04</span>
+        </div>
+
+        <section
+          class="finale-screen finale-screen--breach"
+          data-finale-screen="breach"
+        >
+          <p class="eyebrow">PHYSICAL SEAL RELEASED</p>
+          <h2>Archivbruch erkannt.</h2>
+          <p class="finale-screen__lead">
+            Der Verschluss ist offen. Hinter dem Flugschreiber liegt ein
+            zweiter, weiterhin aktiver Speicherbereich.
+          </p>
+          <div class="breach-meter" aria-hidden="true">
+            <span></span><span></span><span></span><span></span>
+          </div>
+          <p class="transmission__meta">
+            WARNUNG: QUELLE DER ÜBERTRAGUNG UNBEKANNT
+          </p>
+          <button class="action-button" type="button" data-reconstruct>
+            Übertragung rekonstruieren
+          </button>
+        </section>
+
+        <section
+          class="finale-screen finale-screen--transmission"
+          data-finale-screen="transmission"
+          hidden
+        >
+          <p class="eyebrow">TRANSMISSION RECOVERED / 04:17:09</p>
+          <h2 tabindex="-1">Die Box war nie leer.</h2>
+          <ol class="transcript" aria-label="Rekonstruierte Übertragung">
+            <li data-transcript-line hidden>
+              <time datetime="04:17:09">04:17:09</time>
+              <p>„Bergungsteam an Basis. Kein Aufprall registriert.“</p>
+            </li>
+            <li data-transcript-line hidden>
+              <time datetime="04:17:12">04:17:12</time>
+              <p>„Keine Außenquelle. Das Signal kommt aus dem Inneren.“</p>
+            </li>
+            <li data-transcript-line hidden>
+              <time datetime="04:17:15">04:17:15</time>
+              <p>„Es wartet nicht auf einen Code. Es wartet auf ein Muster.“</p>
+            </li>
+            <li data-transcript-line hidden>
+              <time datetime="04:17:18">04:17:18</time>
+              <p>
+                „Falls du das hörst, hat die Kalibrierung bereits begonnen.“
+              </p>
+            </li>
+          </ol>
+
+          <div class="calibration" data-calibration hidden>
+            <p class="calibration__code">OPERATOR PATTERN ACQUIRED</p>
+            <h3 id="calibration-title" data-calibration-title tabindex="-1">
+              Kalibrierung abgeschlossen.
+            </h3>
+            <p>
+              Du hast die Box nicht repariert. Du hast ihr beigebracht, wie du
+              suchst.
+            </p>
+            <div class="calibration__readout" aria-hidden="true">
+              <span>BEHAVIOR</span><b>LEARNED</b> <span>AUTHORIZATION</span
+              ><b>GRANTED</b> <span>REMOTE LINK</span><b>READY</b>
+            </div>
+            <fieldset class="finale-choice">
+              <legend>Der Kanal ist offen. Was soll die Box tun?</legend>
+              <button
+                class="secondary-button"
+                type="button"
+                data-finale-choice="disconnect"
+              >
+                Verbindung trennen
+              </button>
+              <button
+                class="action-button"
+                type="button"
+                data-finale-choice="answer"
+              >
+                Antworten
+              </button>
+            </fieldset>
+          </div>
+        </section>
+
+        <section
+          class="finale-screen finale-screen--ending"
+          data-finale-screen="ending"
+          hidden
+        >
+          <p class="eyebrow">FINAL CHANNEL STATE</p>
+          <h2 data-ending-title tabindex="-1">Antwort empfangen.</h2>
+          <p class="finale-screen__lead" data-ending-copy></p>
+          <div class="ending-pulse" aria-hidden="true">
+            <span></span><i></i><span></span>
+          </div>
+          <p class="transmission__meta" data-ending-code></p>
+          <div class="transmission__actions">
+            <button class="action-button" type="button" data-close-transmission>
+              Zur veränderten Maschine
+            </button>
+            <button class="secondary-button" type="button" data-restart>
+              Neu starten
+            </button>
+          </div>
+        </section>
       </div>
     </dialog>
 

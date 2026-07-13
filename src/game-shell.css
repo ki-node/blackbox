@@ -683,6 +683,7 @@ button[data-feedback="tap"],
   font:
     0.62rem/1.2 ui-monospace,
     monospace;
+  pointer-events: none;
   text-align: center;
 }
 

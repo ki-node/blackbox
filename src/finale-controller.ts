@@ -1,6 +1,5 @@
 import type { AudioController } from "./audio-controller";
-
-type FinaleChoice = "answer" | "disconnect";
+import { AnomalyRenderer, type AnomalyMode } from "./anomaly-renderer";
 
 const transcriptDelay = 720;
 
@@ -22,6 +21,9 @@ export class FinaleController {
   private readonly endingTitle: HTMLElement;
   private readonly endingCopy: HTMLElement;
   private readonly endingCode: HTMLElement;
+  private readonly endingKicker: HTMLElement;
+  private readonly endingActions: HTMLElement;
+  private readonly renderer: AnomalyRenderer;
 
   public constructor(
     private readonly dialog: HTMLDialogElement,
@@ -38,6 +40,11 @@ export class FinaleController {
     this.endingTitle = requireElement("[data-ending-title]", dialog);
     this.endingCopy = requireElement("[data-ending-copy]", dialog);
     this.endingCode = requireElement("[data-ending-code]", dialog);
+    this.endingKicker = requireElement("[data-event-kicker]", dialog);
+    this.endingActions = requireElement("[data-ending-actions]", dialog);
+    this.renderer = new AnomalyRenderer(
+      requireElement<HTMLCanvasElement>("[data-anomaly-canvas]", dialog),
+    );
 
     this.listen(requireElement("[data-reconstruct]", dialog), "click", () =>
       this.reconstruct(),
@@ -46,7 +53,7 @@ export class FinaleController {
       .querySelectorAll<HTMLButtonElement>("[data-finale-choice]")
       .forEach((button) => {
         this.listen(button, "click", () => {
-          this.choose(button.dataset.finaleChoice as FinaleChoice);
+          this.choose(button.dataset.finaleChoice as AnomalyMode);
         });
       });
     this.listen(
@@ -60,18 +67,26 @@ export class FinaleController {
     });
     this.listen(dialog, "close", () => {
       this.clearTimers();
+      this.renderer.stop();
       if (!document.documentElement.dataset.ending) this.restoreMachine();
+    });
+    this.listen(window, "resize", () => {
+      if (this.renderer.isRendering) this.renderer.resize();
     });
   }
 
   public open(): void {
     this.clearTimers();
+    this.renderer.stop();
     this.showScreen("breach");
     this.transcriptLines.forEach((line) => {
       line.hidden = true;
       line.classList.remove("is-revealed");
     });
     this.calibration.hidden = true;
+    this.endingActions.hidden = true;
+    delete document.documentElement.dataset.ending;
+    delete document.documentElement.dataset.eventPhase;
     document.documentElement.dataset.anomaly = "breach";
 
     if (!this.dialog.open) this.dialog.showModal();
@@ -85,13 +100,16 @@ export class FinaleController {
 
   public reset(): void {
     this.clearTimers();
+    this.renderer.stop();
     if (this.dialog.open) this.dialog.close();
     delete document.documentElement.dataset.anomaly;
     delete document.documentElement.dataset.ending;
+    delete document.documentElement.dataset.eventPhase;
   }
 
   public destroy(): void {
     this.reset();
+    this.renderer.destroy();
     this.cleanup.forEach((remove) => remove());
   }
 
@@ -99,8 +117,7 @@ export class FinaleController {
     this.clearTimers();
     this.showScreen("transmission");
     document.documentElement.dataset.anomaly = "calibrating";
-    this.audio.impact(64, 0.5, 0.045);
-    this.schedule(() => this.audio.tone(192, 0.3, 0.035), 120);
+    this.audio.transmission();
 
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -111,7 +128,7 @@ export class FinaleController {
       this.schedule(() => {
         line.hidden = false;
         line.classList.add("is-revealed");
-        this.audio.tone(126 + index * 48, 0.11, 0.025);
+        this.audio.dataPulse(index);
       }, delay * index);
     });
 
@@ -120,8 +137,7 @@ export class FinaleController {
         this.calibration.hidden = false;
         document.documentElement.dataset.anomaly = "awake";
         this.relabelMachine();
-        this.audio.tone(220, 0.32, 0.04);
-        this.schedule(() => this.audio.tone(440, 0.4, 0.035), 140);
+        this.audio.success(3);
         requireElement<HTMLElement>(
           "[data-calibration-title]",
           this.dialog,
@@ -131,31 +147,73 @@ export class FinaleController {
     );
   }
 
-  private choose(choice: FinaleChoice): void {
+  private choose(mode: AnomalyMode): void {
+    this.clearTimers();
     this.showScreen("ending");
-    document.documentElement.dataset.ending = choice;
+    this.endingActions.hidden = true;
+    document.documentElement.dataset.ending = mode;
+    document.documentElement.dataset.anomaly = "released";
+    document.documentElement.dataset.eventPhase = "opening";
+    this.renderer.start(mode);
+    this.audio.finalEvent(mode);
 
-    if (choice === "disconnect") {
-      this.endingTitle.textContent = "Befehl abgelehnt.";
+    if (mode === "shutdown") {
+      this.endingKicker.textContent = "EMERGENCY SEAL / COMMAND SENT";
+      this.endingTitle.textContent = "Notabschaltung läuft.";
       this.endingCopy.textContent =
-        "Das Display erlischt. Nur ein Kanal bleibt aktiv – und sendet weiter in einen Raum, der plötzlich nicht mehr leer klingt.";
-      this.endingCode.textContent =
-        "LINK PERSISTENT // REMOTE CHANNEL LISTENING";
-      this.audio.tone(58, 0.65, 0.05);
+        "Vier mechanische Sperren fahren gleichzeitig in den Kern.";
+      this.endingCode.textContent = "INTERLOCK RESPONSE: WAITING";
     } else {
-      this.endingTitle.textContent = "Antwort empfangen.";
+      this.endingKicker.textContent = "UPLINK OPENING / LOCAL ECHO DETECTED";
+      this.endingTitle.textContent = "Kontaktsequenz läuft.";
       this.endingCopy.textContent =
-        "Die Box sendet den rekonstruierten Impuls. Aus dem Rauschen antwortet dasselbe Muster – näher, klarer und nicht mehr allein.";
-      this.endingCode.textContent =
-        "HANDSHAKE ACCEPTED // SECOND DEVICE DETECTED";
-      [220, 330, 494, 660].forEach((frequency, index) => {
-        this.schedule(
-          () => this.audio.tone(frequency, 0.34, 0.035),
-          index * 105,
-        );
-      });
+        "Der Kern faltet das rekonstruierte Muster zurück auf seine Quelle.";
+      this.endingCode.textContent = "RETURN LATENCY: MEASURING";
+    }
+    this.endingTitle.focus();
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reducedMotion) {
+      this.revealEnding(mode);
+      return;
     }
 
+    this.schedule(() => {
+      document.documentElement.dataset.eventPhase = "contact";
+      this.endingKicker.textContent =
+        mode === "contact"
+          ? "RETURN LATENCY: 0.000 MS"
+          : "INTERLOCK RESPONSE: NONE";
+    }, 900);
+    this.schedule(() => {
+      document.documentElement.dataset.eventPhase = "rupture";
+      this.endingKicker.textContent =
+        mode === "contact" ? "SECOND SIGNAL: 0.0 M" : "CORE MASS: 0.000 KG";
+    }, 1_900);
+    this.schedule(() => this.revealEnding(mode), 3_250);
+  }
+
+  private revealEnding(mode: AnomalyMode): void {
+    document.documentElement.dataset.eventPhase = "resolved";
+    if (mode === "shutdown") {
+      this.endingKicker.textContent =
+        "COMMAND OVERRIDDEN / CHANNEL REMAINS OPEN";
+      this.endingTitle.textContent = "Notabschaltung fehlgeschlagen.";
+      this.endingCopy.textContent =
+        "Die Sicherungen schließen. Der Kern ist bereits leer. Im Rauschen läuft dein Abschaltbefehl weiter – von außerhalb des Geräts.";
+      this.endingCode.textContent =
+        "CONTAINMENT: EMPTY // SIGNAL SOURCE: LOCAL";
+    } else {
+      this.endingKicker.textContent = "ORIGIN RESOLVED / THIS DEVICE";
+      this.endingTitle.textContent = "Kontakt hergestellt.";
+      this.endingCopy.textContent =
+        "Der Kern antwortet nicht aus der Box. Das Muster zeichnet sich um dein Gerät herum nach. Du hast keine Box geöffnet. Du hast eine Tür gebaut.";
+      this.endingCode.textContent =
+        "ORIGIN: THIS DEVICE // CONTAINMENT: EXTERNAL";
+    }
+    this.endingActions.hidden = false;
     this.endingTitle.focus();
   }
 
@@ -167,10 +225,10 @@ export class FinaleController {
 
   private relabelMachine(): void {
     const labels: Record<string, string> = {
-      power: "CAPTURED",
-      signal: "MATCHED",
-      memory: "LEARNED",
-      lock: "GRANTED",
+      power: "RELEASED",
+      signal: "BREACHED",
+      memory: "EXPOSED",
+      lock: "OPEN",
     };
     Object.entries(labels).forEach(([module, label]) => {
       requireElement<HTMLElement>(
@@ -178,9 +236,9 @@ export class FinaleController {
       ).textContent = label;
     });
     requireElement<HTMLElement>("[data-system-state]").textContent =
-      "LINK ACTIVE";
+      "CONTAINMENT LOST";
     requireElement<HTMLElement>("[data-status]").textContent =
-      "Operator-Muster erfasst. Kalibrierung abgeschlossen.";
+      "Vier Sicherungen aufgehoben. Kernquelle nicht mehr lokalisierbar.";
   }
 
   private restoreMachine(): void {

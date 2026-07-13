@@ -81,25 +81,33 @@ test("restores all systems and reveals the final transmission", async ({
     .getByRole("button", { name: "Übertragung rekonstruieren" })
     .click();
   await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
-    "Die Box war nie leer.",
+    "Das ist keine Black Box.",
   );
-  await expect(dialog).toContainText("Das Signal kommt aus dem Inneren");
+  await expect(dialog).toContainText(
+    "Die vier Systeme sind keine Reparaturpfade",
+  );
   await expect(
-    dialog.getByRole("heading", { name: "Kalibrierung abgeschlossen." }),
+    dialog.getByRole("heading", { name: "Das war keine Reparatur." }),
   ).toBeVisible();
-  await dialog.getByRole("button", { name: "Antworten" }).click();
-  await expect(dialog.getByRole("heading")).toHaveText("Antwort empfangen.");
-  await expect(dialog).toContainText("SECOND DEVICE DETECTED");
+  await dialog.getByRole("button", { name: "Kontakt herstellen" }).click();
+  await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
+    "data-rendering",
+    "true",
+  );
+  await expect(dialog.getByRole("heading")).toHaveText("Kontakt hergestellt.");
+  await expect(dialog).toContainText("ORIGIN: THIS DEVICE");
   await dialog
     .getByRole("button", { name: "Zur veränderten Maschine" })
     .click();
   await expect(
     page.locator('[data-module="memory"] [data-module-status]'),
-  ).toHaveText("LEARNED");
-  await expect(page.locator("[data-system-state]")).toHaveText("LINK ACTIVE");
+  ).toHaveText("EXPOSED");
+  await expect(page.locator("[data-system-state]")).toHaveText(
+    "CONTAINMENT LOST",
+  );
 });
 
-test("offers a distinct disconnect ending and keeps the finale accessible", async ({
+test("offers a distinct shutdown ending and keeps the finale accessible", async ({
   page,
   browserName,
 }) => {
@@ -111,9 +119,15 @@ test("offers a distinct disconnect ending and keeps the finale accessible", asyn
   await dialog
     .getByRole("button", { name: "Übertragung rekonstruieren" })
     .click();
-  await dialog.getByRole("button", { name: "Verbindung trennen" }).click();
-  await expect(dialog.getByRole("heading")).toHaveText("Befehl abgelehnt.");
-  await expect(dialog).toContainText("LINK PERSISTENT");
+  await dialog.getByRole("button", { name: "Notabschaltung" }).click();
+  await expect(dialog.getByRole("heading")).toHaveText(
+    "Notabschaltung fehlgeschlagen.",
+  );
+  await expect(dialog).toContainText("CONTAINMENT: EMPTY");
+  await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
+    "data-rendering",
+    "true",
+  );
 
   if (browserName !== "webkit") {
     const results = await new AxeBuilder({ page })

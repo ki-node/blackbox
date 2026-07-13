@@ -1,3 +1,23 @@
+type FinaleMode = "contact" | "shutdown";
+
+interface OscillatorCue {
+  duration: number;
+  endFrequency?: number;
+  frequency: number;
+  start?: number;
+  type?: OscillatorType;
+  volume: number;
+}
+
+interface NoiseCue {
+  duration: number;
+  endFrequency: number;
+  frequency: number;
+  start?: number;
+  type?: BiquadFilterType;
+  volume: number;
+}
+
 export class AudioController {
   private context: AudioContext | undefined;
   private enabled = false;
@@ -8,78 +28,227 @@ export class AudioController {
 
   public toggle(): boolean {
     this.enabled = !this.enabled;
-    if (this.enabled) this.tone(180, 0.08, 0.025);
+    if (this.enabled) this.relay(true);
     return this.enabled;
   }
 
-  public tone(frequency: number, duration = 0.12, volume = 0.04): void {
-    if (!this.enabled) return;
-
-    const context = this.getContext();
+  public relay(active: boolean): void {
+    const context = this.activeContext();
+    if (!context) return;
     const now = context.currentTime;
-    const oscillator = context.createOscillator();
-    const overtone = context.createOscillator();
-    const gain = context.createGain();
-    const overtoneGain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(frequency, now);
-    overtone.type = "triangle";
-    overtone.frequency.setValueAtTime(frequency * 2.005, now);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(volume, now + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    overtoneGain.gain.setValueAtTime(0.0001, now);
-    overtoneGain.gain.exponentialRampToValueAtTime(volume * 0.16, now + 0.015);
-    overtoneGain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      now + duration * 0.82,
-    );
-    oscillator.connect(gain).connect(context.destination);
-    overtone.connect(overtoneGain).connect(context.destination);
-    oscillator.start(now);
-    overtone.start(now);
-    oscillator.stop(now + duration + 0.02);
-    overtone.stop(now + duration + 0.02);
+    this.noise(context, now, {
+      duration: 0.045,
+      frequency: active ? 2_800 : 1_900,
+      endFrequency: 520,
+      type: "bandpass",
+      volume: 0.055,
+    });
+    this.oscillator(context, now, {
+      duration: active ? 0.075 : 0.1,
+      frequency: active ? 74 : 58,
+      endFrequency: 34,
+      type: "square",
+      volume: 0.022,
+    });
   }
 
-  public impact(frequency = 72, duration = 0.32, volume = 0.05): void {
-    if (!this.enabled) return;
-
-    const context = this.getContext();
+  public ratchet(position: number): void {
+    const context = this.activeContext();
+    if (!context) return;
     const now = context.currentTime;
-    const oscillator = context.createOscillator();
-    const oscillatorGain = context.createGain();
-    oscillator.type = "sawtooth";
-    oscillator.frequency.setValueAtTime(frequency * 1.8, now);
-    oscillator.frequency.exponentialRampToValueAtTime(
-      frequency,
-      now + duration,
-    );
-    oscillatorGain.gain.setValueAtTime(volume, now);
-    oscillatorGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    oscillator.connect(oscillatorGain).connect(context.destination);
+    this.noise(context, now, {
+      duration: 0.028,
+      frequency: 2_100 + position * 90,
+      endFrequency: 680,
+      type: "bandpass",
+      volume: 0.04,
+    });
+    this.oscillator(context, now, {
+      duration: 0.045,
+      frequency: 52 + position * 1.4,
+      endFrequency: 34,
+      type: "triangle",
+      volume: 0.028,
+    });
+  }
 
-    const frameCount = Math.max(1, Math.round(context.sampleRate * duration));
-    const buffer = context.createBuffer(1, frameCount, context.sampleRate);
-    const channel = buffer.getChannelData(0);
-    for (let index = 0; index < frameCount; index += 1) {
-      channel[index] = (Math.random() * 2 - 1) * (1 - index / frameCount);
+  public error(): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.oscillator(context, now, {
+      duration: 0.34,
+      frequency: 118,
+      endFrequency: 43,
+      type: "sawtooth",
+      volume: 0.026,
+    });
+    this.noise(context, now, {
+      start: 0.06,
+      duration: 0.22,
+      frequency: 760,
+      endFrequency: 120,
+      type: "lowpass",
+      volume: 0.03,
+    });
+  }
+
+  public success(level = 0): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.noise(context, now, {
+      duration: 0.38,
+      frequency: 180,
+      endFrequency: 3_400,
+      type: "bandpass",
+      volume: 0.035,
+    });
+    [64, 96, 145].forEach((frequency, index) => {
+      this.oscillator(context, now, {
+        start: index * 0.055,
+        duration: 0.42,
+        frequency: frequency + level * 7,
+        endFrequency: frequency * 1.28 + level * 9,
+        type: index === 0 ? "sawtooth" : "triangle",
+        volume: index === 0 ? 0.024 : 0.014,
+      });
+    });
+  }
+
+  public memory(symbolIndex: number, matched = true): void {
+    const context = this.activeContext();
+    if (!context) return;
+    if (!matched) {
+      this.error();
+      return;
     }
-    const noise = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const noiseGain = context.createGain();
-    noise.buffer = buffer;
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(900, now);
-    filter.frequency.exponentialRampToValueAtTime(120, now + duration);
-    noiseGain.gain.setValueAtTime(volume * 0.5, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    noise.connect(filter).connect(noiseGain).connect(context.destination);
+    const now = context.currentTime;
+    const frequency = 210 + symbolIndex * 76;
+    this.oscillator(context, now, {
+      duration: 0.19,
+      frequency,
+      endFrequency: frequency * 0.985,
+      type: "sine",
+      volume: 0.034,
+    });
+    this.oscillator(context, now, {
+      start: 0.015,
+      duration: 0.13,
+      frequency: frequency * 2.72,
+      endFrequency: frequency * 2.2,
+      type: "triangle",
+      volume: 0.009,
+    });
+  }
 
-    oscillator.start(now);
-    noise.start(now);
-    oscillator.stop(now + duration + 0.02);
-    noise.stop(now + duration + 0.02);
+  public dataPulse(index: number): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.noise(context, now, {
+      duration: 0.11,
+      frequency: 1_100 + index * 370,
+      endFrequency: 240,
+      type: "bandpass",
+      volume: 0.035,
+    });
+    this.oscillator(context, now, {
+      duration: 0.16,
+      frequency: 52 + index * 8,
+      endFrequency: 32,
+      type: "square",
+      volume: 0.016,
+    });
+  }
+
+  public breach(): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.noise(context, now, {
+      duration: 1.45,
+      frequency: 110,
+      endFrequency: 2_800,
+      type: "bandpass",
+      volume: 0.05,
+    });
+    this.oscillator(context, now, {
+      duration: 1.7,
+      frequency: 84,
+      endFrequency: 27,
+      type: "sawtooth",
+      volume: 0.045,
+    });
+    this.oscillator(context, now, {
+      start: 0.18,
+      duration: 1.25,
+      frequency: 1_480,
+      endFrequency: 184,
+      type: "triangle",
+      volume: 0.015,
+    });
+  }
+
+  public transmission(): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    this.noise(context, now, {
+      duration: 3.4,
+      frequency: 260,
+      endFrequency: 1_800,
+      type: "bandpass",
+      volume: 0.024,
+    });
+    [43, 43.6].forEach((frequency, index) => {
+      this.oscillator(context, now, {
+        duration: 3.6,
+        frequency,
+        endFrequency: 58 + index * 2,
+        type: index === 0 ? "sawtooth" : "triangle",
+        volume: index === 0 ? 0.024 : 0.018,
+      });
+    });
+  }
+
+  public finalEvent(mode: FinaleMode): void {
+    const context = this.activeContext();
+    if (!context) return;
+    const now = context.currentTime;
+    const contact = mode === "contact";
+    this.noise(context, now, {
+      duration: 5.5,
+      frequency: contact ? 90 : 3_600,
+      endFrequency: contact ? 4_800 : 80,
+      type: "bandpass",
+      volume: 0.045,
+    });
+    const voices = contact ? [34, 51, 76] : [81, 54, 27];
+    voices.forEach((frequency, index) => {
+      this.oscillator(context, now, {
+        start: index * 0.09,
+        duration: 5.2 - index * 0.2,
+        frequency,
+        endFrequency: contact
+          ? frequency * 2.2
+          : Math.max(19, frequency * 0.52),
+        type: index === 0 ? "sawtooth" : "triangle",
+        volume: index === 0 ? 0.038 : 0.022,
+      });
+    });
+    if (!contact) {
+      [0.35, 0.62, 0.88, 1.03].forEach((start, index) => {
+        this.noise(context, now, {
+          start,
+          duration: 0.11 + index * 0.025,
+          frequency: 4_200,
+          endFrequency: 180,
+          type: "bandpass",
+          volume: 0.055,
+        });
+      });
+    }
   }
 
   public destroy(): void {
@@ -87,9 +256,61 @@ export class AudioController {
     this.context = undefined;
   }
 
-  private getContext(): AudioContext {
+  private activeContext(): AudioContext | undefined {
+    if (!this.enabled) return undefined;
     this.context ??= new AudioContext();
     if (this.context.state === "suspended") void this.context.resume();
     return this.context;
+  }
+
+  private oscillator(
+    context: AudioContext,
+    now: number,
+    cue: OscillatorCue,
+  ): void {
+    const start = now + (cue.start ?? 0);
+    const end = start + cue.duration;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = cue.type ?? "sine";
+    oscillator.frequency.setValueAtTime(cue.frequency, start);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      cue.endFrequency ?? cue.frequency,
+      end,
+    );
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(cue.volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start(start);
+    oscillator.stop(end + 0.03);
+  }
+
+  private noise(context: AudioContext, now: number, cue: NoiseCue): void {
+    const start = now + (cue.start ?? 0);
+    const end = start + cue.duration;
+    const frameCount = Math.max(
+      1,
+      Math.round(context.sampleRate * cue.duration),
+    );
+    const buffer = context.createBuffer(1, frameCount, context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    for (let index = 0; index < frameCount; index += 1) {
+      channel[index] = Math.random() * 2 - 1;
+    }
+    const source = context.createBufferSource();
+    const filter = context.createBiquadFilter();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    filter.type = cue.type ?? "bandpass";
+    filter.Q.value = cue.type === "lowpass" ? 0.8 : 2.8;
+    filter.frequency.setValueAtTime(cue.frequency, start);
+    filter.frequency.exponentialRampToValueAtTime(cue.endFrequency, end);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(cue.volume, start + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    source.connect(filter).connect(gain).connect(context.destination);
+    source.start(start);
+    source.stop(end + 0.02);
   }
 }

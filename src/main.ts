@@ -123,7 +123,7 @@ class BlackBoxApp {
           const power = [...this.state.power];
           power[index] = !power[index];
           this.state = { ...this.state, power };
-          this.audio.tone(power[index] ? 180 : 120, 0.07);
+          this.audio.relay(power[index] ?? false);
           this.persistAndRender();
         });
       });
@@ -191,7 +191,7 @@ class BlackBoxApp {
         "Relaisfehler. Stromkreis instabil – Gravur erneut prüfen.",
         true,
       );
-      this.audio.tone(82, 0.22);
+      this.audio.error();
       return;
     }
 
@@ -200,8 +200,7 @@ class BlackBoxApp {
       hints: 0,
       solved: { ...this.state.solved, power: true },
     };
-    this.audio.tone(240, 0.12);
-    window.setTimeout(() => this.audio.tone(360, 0.16), 110);
+    this.audio.success(0);
     this.advance("signal");
   }
 
@@ -209,7 +208,7 @@ class BlackBoxApp {
     if (!isSignalCorrect(this.state.signal)) {
       const distance = signalDistance(this.state.signal);
       this.setStatus(`Keine Kopplung. Signalabweichung: ${distance}.`, true);
-      this.audio.tone(96 + (9 - Math.min(distance, 9)) * 12, 0.18);
+      this.audio.error();
       return;
     }
 
@@ -218,8 +217,7 @@ class BlackBoxApp {
       hints: 0,
       solved: { ...this.state.solved, signal: true },
     };
-    this.audio.tone(420, 0.14);
-    window.setTimeout(() => this.audio.tone(630, 0.18), 130);
+    this.audio.success(1);
     this.advance("memory");
   }
 
@@ -235,10 +233,7 @@ class BlackBoxApp {
         const echo = requireElement<HTMLElement>(`[data-echo="${symbol}"]`);
         echo.classList.add("is-active");
         this.echoAnnouncement.textContent = `Impuls ${index + 1}: ${symbolLabels[symbol]}`;
-        this.audio.tone(
-          { triangle: 260, diamond: 340, circle: 430, square: 520 }[symbol],
-          0.16,
-        );
+        this.audio.memory(index);
         const offTimer = window.setTimeout(
           () => echo.classList.remove("is-active"),
           330,
@@ -264,16 +259,13 @@ class BlackBoxApp {
   private enterSymbol(symbol: SymbolName): void {
     const result = enterMemorySymbol(this.state, symbol);
     this.state = result.state;
-    this.audio.tone(
-      result.matched ? 250 + this.state.memoryProgress * 55 : 88,
-      0.12,
-    );
+    this.audio.memory(this.state.memoryProgress, result.matched);
 
     if (!result.matched) {
       this.setStatus("Echo abgebrochen. Die Folge beginnt von vorn.", true);
     } else if (result.complete) {
       this.state = { ...this.state, hints: 0 };
-      window.setTimeout(() => this.audio.tone(720, 0.22), 120);
+      this.audio.success(2);
       this.advance("lock");
       return;
     } else {
@@ -288,7 +280,7 @@ class BlackBoxApp {
     const lock = [...this.state.lock];
     lock[index] = ((lock[index] ?? 0) + direction + 10) % 10;
     this.state = { ...this.state, lock };
-    this.audio.tone(110 + (lock[index] ?? 0) * 9, 0.05, 0.02);
+    this.audio.ratchet(lock[index] ?? 0);
     this.persistAndRender();
   }
 
@@ -298,7 +290,7 @@ class BlackBoxApp {
         "Verschluss blockiert. Ableitung R · C · E ist ungültig.",
         true,
       );
-      this.audio.tone(72, 0.28);
+      this.audio.error();
       return;
     }
 
@@ -308,11 +300,8 @@ class BlackBoxApp {
     };
     this.persistAndRender();
     this.effects.surge("lock");
-    this.audio.impact(68, 0.42, 0.055);
+    this.audio.breach();
     this.setStatus(stageCopy.complete);
-    [220, 330, 440, 660].forEach((frequency, index) => {
-      window.setTimeout(() => this.audio.tone(frequency, 0.24), index * 140);
-    });
     window.setTimeout(() => this.openTransmission(), 650);
   }
 

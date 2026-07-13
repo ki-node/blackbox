@@ -1,60 +1,98 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-async function solvePower(page: Page): Promise<void> {
+async function startMission(page: Page): Promise<void> {
+  const start = page.getByRole("button", { name: "Verbindung herstellen" });
+  if (await start.isVisible()) await start.click();
+}
+
+async function continueStory(page: Page): Promise<void> {
+  const dialog = page.getByRole("dialog", {
+    name: /KANAL|Das ist|Jahre|gehört|Weg|Stunden/i,
+  });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: /Weiter zu Level/ }).click();
+  await expect(dialog).toBeHidden();
+}
+
+async function solvePower(page: Page, continueAfter = true): Promise<void> {
   await page.getByRole("button", { name: /R1 AUS/ }).click();
   await page.getByRole("button", { name: /R3 AUS/ }).click();
   await page.getByRole("button", { name: /R4 AUS/ }).click();
   await page.getByRole("button", { name: "Stromkreis schließen" }).click();
+  if (continueAfter) await continueStory(page);
 }
 
 async function solveSignal(page: Page): Promise<void> {
   await page.locator('[data-signal="carrier"]').fill("7");
   await page.locator('[data-signal="gain"]').fill("3");
   await page.locator('[data-signal="phase"]').fill("2");
-  await page.getByRole("button", { name: "Werte übernehmen" }).click();
+  await page.getByRole("button", { name: "Signal einrasten" }).click();
+  await continueStory(page);
 }
 
 async function solveMemory(page: Page): Promise<void> {
   for (const label of ["Dreieck", "Raute", "Kreis", "Dreieck", "Quadrat"]) {
     await page.getByRole("button", { name: label, exact: true }).click();
   }
+  await continueStory(page);
+}
+
+async function solveRoute(page: Page): Promise<void> {
+  const turns = [3, 0, 1, 0, 3, 1, 1, 0, 3];
+  for (const [index, count] of turns.entries()) {
+    for (let turn = 0; turn < count; turn += 1) {
+      await page.locator(`[data-route="${index}"]`).click();
+    }
+  }
+  await expect(page.locator("[data-route-status]")).toHaveText(
+    "Durchgehende Leitung hergestellt.",
+  );
+  await page.getByRole("button", { name: "Leitung prüfen" }).click();
+  await continueStory(page);
+}
+
+async function adjustBalance(
+  page: Page,
+  cell: number,
+  direction: "up" | "down",
+  count: number,
+): Promise<void> {
+  const control = page
+    .locator(`[data-balance="${cell}"]`)
+    .locator(direction === "up" ? "[data-balance-up]" : "[data-balance-down]");
+  for (let press = 0; press < count; press += 1) await control.click();
+}
+
+async function solveBalance(page: Page): Promise<void> {
+  await adjustBalance(page, 0, "up", 2);
+  await adjustBalance(page, 1, "up", 2);
+  await adjustBalance(page, 2, "down", 1);
+  await adjustBalance(page, 3, "down", 2);
+  await expect(page.locator("[data-balance-total]")).toHaveText("12");
+  await page.getByRole("button", { name: "Balance verriegeln" }).click();
+  await continueStory(page);
+}
+
+async function turnWheel(
+  page: Page,
+  wheel: number,
+  direction: "up" | "down",
+  count: number,
+): Promise<void> {
+  const control = page
+    .locator(`[data-wheel="${wheel}"]`)
+    .locator(direction === "up" ? "[data-wheel-up]" : "[data-wheel-down]");
+  for (let press = 0; press < count; press += 1) await control.click();
 }
 
 async function solveLock(page: Page): Promise<void> {
-  for (let index = 0; index < 3; index += 1) {
-    await page.getByRole("button", { name: "Erste Ziffer erhöhen" }).click();
-  }
-  for (let index = 0; index < 7; index += 1) {
-    await page.getByRole("button", { name: "Zweite Ziffer erhöhen" }).click();
-  }
-  for (let index = 0; index < 5; index += 1) {
-    await page.getByRole("button", { name: "Dritte Ziffer erhöhen" }).click();
-  }
+  await turnWheel(page, 0, "up", 3);
+  await turnWheel(page, 1, "down", 3);
+  await turnWheel(page, 2, "up", 5);
+  await turnWheel(page, 3, "up", 4);
+  await turnWheel(page, 4, "up", 2);
   await page.getByRole("button", { name: "Black Box öffnen" }).click();
-}
-
-async function reachFinale(page: Page): Promise<void> {
-  await solvePower(page);
-  await solveSignal(page);
-  await solveMemory(page);
-  await solveLock(page);
-}
-
-async function solveLocation(page: Page): Promise<void> {
-  const first = page.locator('[data-direction-button="0"]');
-  const second = page.locator('[data-direction-button="1"]');
-  const third = page.locator('[data-direction-button="2"]');
-  await expect(first).toBeVisible();
-  await expect(second).toBeVisible();
-  await expect(third).toBeVisible();
-  await first.click({ force: true });
-  await second.click({ force: true });
-  await second.click({ force: true });
-  await third.click({ force: true });
-  await page
-    .getByRole("button", { name: "Position prüfen" })
-    .click({ force: true });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -62,163 +100,223 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Hol sie nach Hause.",
+    "23 Jahre still. Jetzt ein Puls.",
   );
+  await startMission(page);
 });
 
-test("restores all systems and reveals the final transmission", async ({
-  page,
-}) => {
-  test.setTimeout(60_000);
+test("opens the black box only after six distinct levels", async ({ page }) => {
+  test.setTimeout(90_000);
   await solvePower(page);
-  await expect(page.locator('[data-module="signal"]')).toHaveAttribute(
-    "aria-disabled",
-    "false",
-  );
+  await expect(page.locator('[data-module="signal"]')).toBeVisible();
 
   await solveSignal(page);
-  await expect(page.locator('[data-module="memory"]')).toHaveAttribute(
-    "aria-disabled",
-    "false",
-  );
+  await expect(page.locator('[data-module="memory"]')).toBeVisible();
 
   await solveMemory(page);
-  await expect(page.locator('[data-module="lock"]')).toHaveAttribute(
-    "aria-disabled",
-    "false",
+  await expect(page.locator('[data-module="route"]')).toBeVisible();
+
+  await solveRoute(page);
+  await expect(page.locator('[data-module="balance"]')).toBeVisible();
+
+  await solveBalance(page);
+  await expect(page.locator('[data-module="lock"]')).toBeVisible();
+  await expect(page.locator("[data-progress-copy]")).toHaveText(
+    "5 von 6 Sicherungen gelöst",
   );
 
   await solveLock(page);
-
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading")).toHaveText("Nachricht gefunden.");
-  await dialog.getByRole("button", { name: "Nachricht abspielen" }).click();
-  await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
-    "Sie leben.",
-  );
-  await expect(dialog).toContainText("Asteria an jeden, der uns hört");
-  await expect(
-    dialog.getByRole("heading", { name: "Findet ihren Standort." }),
-  ).toBeVisible();
-  await solveLocation(page);
-  await expect(dialog.getByRole("heading")).toHaveText("Hol sie nach Hause.");
-  await dialog
-    .getByRole("button", { name: "Rettungssignal senden" })
-    .click({ force: true });
-  await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
-    "data-rendering",
-    "true",
-  );
-  await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
-  await expect(dialog).toContainText("6 VON 6 LEVELS ABGESCHLOSSEN");
-  await expect(dialog).toContainText("Du bist fertig");
-  await dialog
-    .getByRole("button", { name: "Zur Missionsübersicht" })
-    .click({ force: true });
-  await expect(
-    page.locator('[data-module="memory"] [data-module-status]'),
-  ).toHaveText("RESTORED");
+  const finale = page.getByRole("dialog", { name: "Geöffnete Black Box" });
+  await expect(finale).toBeVisible();
+  await expect(finale.getByRole("heading")).toHaveText("Die Black Box atmet.");
   await expect(page.locator("[data-system-state]")).toHaveText(
     "MISSION COMPLETE",
   );
 });
 
-test("explains mistakes, completes the rescue and keeps the finale accessible", async ({
-  page,
-  browserName,
-}) => {
-  test.setTimeout(60_000);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await reachFinale(page);
-
-  const dialog = page.getByRole("dialog");
-  await dialog.getByRole("button", { name: "Nachricht abspielen" }).click();
-  await page
-    .getByRole("button", { name: "Position prüfen" })
-    .click({ force: true });
-  await expect(dialog).toContainText(
-    "Alle drei Pfeile müssen zur leuchtenden Mitte zeigen",
-  );
-  await solveLocation(page);
-  await dialog
-    .getByRole("button", { name: "Rettungssignal senden" })
-    .click({ force: true });
-  await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
-  await expect(dialog).toContainText("Rettung kennt jetzt ihre Position");
-  await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
-    "data-rendering",
-    "true",
-  );
-
-  if (browserName !== "webkit") {
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations).toEqual([]);
-  }
-});
-
-test("rejects incorrect settings and provides progressive optional hints", async ({
+test("lets the player control every story page and ends with a clear answer", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "Stromkreis schließen" }).click();
-  await expect(page.locator("[data-status]")).toContainText("Relaisfehler");
+  test.setTimeout(90_000);
+  await solvePower(page, false);
+  const chapter = page.getByRole("dialog");
+  await expect(chapter.getByRole("heading")).toHaveText(
+    "Das ist keine Aufzeichnung.",
+  );
+  await page.waitForTimeout(1_200);
+  await expect(chapter.getByRole("heading")).toHaveText(
+    "Das ist keine Aufzeichnung.",
+  );
+  await expect(page.locator('[data-module="signal"]')).toBeHidden();
+  await chapter.getByRole("button", { name: "Weiter zu Level 2" }).click();
 
-  await page.getByRole("button", { name: "Hinweis entschlüsseln" }).click();
-  await expect(page.locator("[data-hint]")).toContainText("Gefüllte Kreise");
-  await page.getByRole("button", { name: "Deutlicherer Hinweis" }).click();
-  await expect(page.locator("[data-hint]")).toContainText("R1, R3 und R4");
+  await solveSignal(page);
+  await solveMemory(page);
+  await solveRoute(page);
+  await solveBalance(page);
+  await solveLock(page);
+
+  const finale = page.getByRole("dialog", { name: "Geöffnete Black Box" });
+  await finale.getByRole("button", { name: "Nachricht lesen" }).click();
+  await expect(finale.getByRole("heading")).toContainText("23 Jahre");
+  await page.waitForTimeout(800);
+  await expect(finale.getByRole("heading")).toContainText("23 Jahre");
+
+  await finale.getByRole("button", { name: "Letzten Teil lesen" }).click();
+  await expect(finale.getByRole("heading")).toHaveText("Du warst die Antwort.");
+  await finale.getByRole("button", { name: "Rettungsroute senden" }).click();
+  const reply = finale.getByRole("button", {
+    name: "Antwort der Asteria lesen",
+  });
+  await expect(reply).toBeEnabled({ timeout: 5_000 });
+  await reply.click();
+  await expect(finale.getByRole("heading")).toHaveText(
+    "„Wir sehen eure Lichter.“",
+  );
+  await expect(finale).toContainText("Sechsunddreißig Menschen leben");
+  await expect(finale).toContainText("DU BIST FERTIG");
 });
 
-test("persists progress locally across reloads", async ({ page }) => {
+test("provides large slider targets, step buttons and immediate feedback", async ({
+  page,
+}) => {
   await solvePower(page);
-  await page.reload();
+  const input = page.locator('[data-signal="carrier"]');
+  const bounds = await input.boundingBox();
+  expect(bounds?.height).toBeGreaterThanOrEqual(30);
 
-  await expect(page.locator('[data-module="power"]')).toHaveClass(/is-solved/);
-  await expect(page.locator('[data-module="signal"]')).not.toHaveClass(
-    /is-locked/,
+  const increase = page.getByRole("button", { name: "Frequenz erhöhen" });
+  await increase.click();
+  await expect(page.locator('[data-output="carrier"]')).toHaveText("5");
+  await expect(page.locator(".signal-adjuster").first()).toHaveAttribute(
+    "data-feedback",
+    "adjust",
   );
-  await expect(page.getByRole("button", { name: /R1 EIN/ })).toHaveAttribute(
+  await expect(increase).toHaveCSS("touch-action", "manipulation");
+});
+
+test("shows visual, audio-ready and supported haptic feedback for controls", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "vibrate", {
+      configurable: true,
+      value: (pattern: number | number[]) => {
+        (
+          window as unknown as { vibrationPattern: number | number[] }
+        ).vibrationPattern = pattern;
+        return true;
+      },
+    });
+  });
+  await page.reload();
+  await startMission(page);
+  const relay = page.getByRole("button", { name: /R1 AUS/ });
+  await relay.click();
+  await expect(relay).toHaveAttribute("data-feedback", "success");
+  const pattern = await page.evaluate(
+    () =>
+      (window as unknown as { vibrationPattern?: number | number[] })
+        .vibrationPattern,
+  );
+  expect(pattern).toBeTruthy();
+  await expect(page.getByRole("button", { name: "Ton an" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
 });
 
-test("routes recovery energy through the machine and reacts to touch", async ({
+test("explains errors and offers two levels of optional hints", async ({
   page,
 }) => {
-  await solvePower(page);
-
-  const machine = page.locator("[data-machine]");
-  await expect(page.locator("html")).toHaveAttribute("data-stage", "signal");
-  await expect(machine).toHaveCSS("--recovery-progress", "0.25");
-  const restoredNode = page.locator('[data-bus-node="power"] i');
-  await expect(restoredNode).toHaveCSS("background-color", "rgb(99, 255, 190)");
-
-  await machine.dispatchEvent("pointerdown", {
-    pointerType: "touch",
-    clientX: 120,
-    clientY: 240,
-  });
-  await expect(machine).toHaveCSS("--pointer-x", /%/);
-  const pointerX = await machine.evaluate((element) =>
-    element.style.getPropertyValue("--pointer-x"),
+  await page.getByRole("button", { name: "Stromkreis schließen" }).click();
+  await expect(page.locator("[data-status]")).toContainText(
+    "stimmen noch nicht überein",
   );
-  expect(pointerX).not.toBe("50%");
+
+  await page.getByRole("button", { name: "Hinweis" }).click();
+  const hint = page.getByRole("dialog", { name: "Hinweis" });
+  await expect(hint).toContainText("Gefüllte Kreise");
+  await hint.getByRole("button", { name: "Deutlicher" }).click();
+  await expect(hint).toContainText("R1, R3 und R4");
 });
 
-test("prevents double-tap zoom on rapid controls without disabling page zoom", async ({
+test("persists the current single-screen level locally", async ({ page }) => {
+  await solvePower(page);
+  await page.reload();
+  await expect(page.locator('[data-module="signal"]')).toBeVisible();
+  await expect(page.locator('[data-module="power"]')).toBeHidden();
+  await expect(page.locator('[data-progress="power"]')).toHaveClass(
+    /is-complete/,
+  );
+  await expect(page.locator("[data-stage-name]")).toHaveText("Signal");
+});
+
+test("uses an app-like single-screen layout without clipped progress labels", async ({
   page,
 }) => {
-  await solvePower(page);
-  await solveSignal(page);
-  await solveMemory(page);
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.reload();
+  await startMission(page);
 
+  const metrics = await page.evaluate(() => ({
+    clientHeight: document.documentElement.clientHeight,
+    scrollHeight: document.documentElement.scrollHeight,
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    bodyOverflow: getComputedStyle(document.body).overflow,
+    currentLabel: document.querySelector("[data-stage-name]")?.textContent,
+    progressLabels: [
+      ...document.querySelectorAll<HTMLElement>(".progress li strong"),
+    ].map((label) => ({
+      text: label.textContent,
+      overflow: getComputedStyle(label).textOverflow,
+    })),
+  }));
+  expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 1);
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+  expect(metrics.bodyOverflow).toBe("hidden");
+  expect(metrics.currentLabel).toBe("Energie");
+  expect(
+    metrics.progressLabels.every(({ overflow }) => overflow !== "ellipsis"),
+  ).toBe(true);
+
+  await expect(page.locator('[data-module="power"]')).toBeInViewport();
+  await expect(
+    page.getByRole("button", { name: "Stromkreis schließen" }),
+  ).toBeInViewport();
+});
+
+test("reflows at 320 CSS pixels and keeps active controls reachable", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.reload();
+  await startMission(page);
+
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBeLessThanOrEqual(
+    dimensions.clientWidth + 1,
+  );
   for (const control of [
-    page.getByRole("button", { name: "Erste Ziffer erhöhen" }),
-    page.getByRole("button", { name: "Erste Ziffer verringern" }),
-    page.getByRole("button", { name: "Black Box öffnen" }),
+    page.getByRole("button", { name: /R1 AUS/ }),
+    page.getByRole("button", { name: "Stromkreis schließen" }),
+    page.getByRole("button", { name: "Hinweis" }),
+  ]) {
+    await expect(control).toBeInViewport();
+  }
+});
+
+test("prevents rapid-control zoom without disabling page zoom", async ({
+  page,
+}) => {
+  for (const control of [
+    page.getByRole("button", { name: /R1 AUS/ }),
+    page.getByRole("button", { name: "Stromkreis schließen" }),
+    page.getByRole("button", { name: "Hinweis" }),
   ]) {
     await expect(control).toHaveCSS("touch-action", "manipulation");
   }
@@ -249,9 +347,7 @@ test("provides an installable standalone app experience", async ({
     "data-display-mode",
     "browser",
   );
-  await expect(
-    page.getByRole("button", { name: "Als App nutzen" }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /App/ })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(async () =>
@@ -267,112 +363,48 @@ test("provides an installable standalone app experience", async ({
     name: "BLACK BOX als App nutzen",
   });
   await expect(dialog).toContainText("Zum Home-Bildschirm");
-  await expect(dialog).toContainText("ohne Safari-Leisten");
   await dialog.getByRole("button", { name: "Verstanden" }).click();
   await expect(dialog).toBeHidden();
 });
 
 test("resets only after explicit confirmation", async ({ page }) => {
   await solvePower(page);
-  const reset = page.getByRole("button", { name: "Zurücksetzen" });
+  const reset = page.getByRole("button", { name: "Neustart" });
   await reset.click();
+  await expect(page.getByRole("button", { name: "Wirklich?" })).toBeVisible();
+  await page.getByRole("button", { name: "Wirklich?" }).click();
   await expect(
-    page.getByRole("button", { name: "Wirklich zurücksetzen?" }),
+    page.getByRole("button", { name: "Verbindung herstellen" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Wirklich zurücksetzen?" }).click();
-
-  await expect(page.locator('[data-module="power"]')).not.toHaveClass(
-    /is-solved/,
-  );
-  await expect(page.locator('[data-module="signal"]')).toHaveClass(/is-locked/);
-});
-
-test("reflows at 320 CSS pixels without horizontal clipping", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 320, height: 568 });
-  await page.reload();
-
-  const dimensions = await page.evaluate(() => ({
-    clientWidth: document.documentElement.clientWidth,
-    scrollWidth: document.documentElement.scrollWidth,
-    offenders: [...document.querySelectorAll<HTMLElement>("body *")]
-      .map((element) => ({
-        selector: `${element.tagName.toLowerCase()}.${element.className}`,
-        left: Math.round(element.getBoundingClientRect().left),
-        right: Math.round(element.getBoundingClientRect().right),
-      }))
-      .filter(
-        ({ left, right }) =>
-          left < -1 || right > document.documentElement.clientWidth + 1,
-      )
-      .slice(0, 10),
-  }));
-  expect(
-    dimensions.scrollWidth,
-    JSON.stringify(dimensions.offenders),
-  ).toBeLessThanOrEqual(dimensions.clientWidth + 1);
-
-  for (const control of [
-    page.getByRole("button", { name: /R1 AUS/ }),
-    page.getByRole("button", { name: "Stromkreis schließen" }),
-    page.getByRole("button", { name: "Hinweis entschlüsseln" }),
-  ]) {
-    await control.scrollIntoViewIfNeeded();
-    const bounds = await control.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds?.x).toBeGreaterThanOrEqual(0);
-    expect((bounds?.x ?? 0) + (bounds?.width ?? 0)).toBeLessThanOrEqual(321);
-  }
 });
 
 test("has no automatically detectable WCAG A/AA violations", async ({
   page,
   browserName,
 }) => {
-  test.skip(
-    browserName === "webkit",
-    "axe-core is validated in mobile and desktop Chromium.",
-  );
-  await solvePower(page);
-  await solveSignal(page);
-  await solveMemory(page);
-
+  if (browserName === "webkit") test.skip();
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations).toEqual([]);
+
+  await solvePower(page, false);
+  const dialogResults = await new AxeBuilder({ page })
+    .include("[data-story-dialog]")
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(dialogResults.violations).toEqual([]);
 });
 
-test("honours reduced motion and supports keyboard activation", async ({
-  page,
-  browserName,
-}) => {
-  test.skip(
-    browserName === "webkit",
-    "Media emulation is validated in Chromium.",
-  );
+test("honours reduced motion and keyboard activation", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.reload();
-
-  const animationDuration = await page
-    .locator(".state-lamp")
-    .evaluate((element) => {
-      return getComputedStyle(element).animationDuration;
-    });
-  expect(Number.parseFloat(animationDuration)).toBeLessThanOrEqual(0.001);
-
-  const relay = page.locator('[data-relay="0"]');
+  const relay = page.getByRole("button", { name: /R1 AUS/ });
   await relay.focus();
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "true");
 
-  const machine = page.locator("[data-machine]");
-  await machine.dispatchEvent("pointermove", {
-    pointerType: "mouse",
-    clientX: 40,
-    clientY: 180,
-  });
-  await expect(machine).toHaveCSS("--machine-rx", "0deg");
-  await expect(machine).toHaveCSS("--machine-ry", "0deg");
+  const animation = await page
+    .locator(".atmosphere__beam")
+    .evaluate((element) => getComputedStyle(element).animationName);
+  expect(animation).toBe("none");
 });

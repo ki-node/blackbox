@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  BALANCE_TARGET,
+  ROUTE_TARGET,
+  balanceDistance,
+  completedCount,
   createInitialState,
   currentStage,
   enterMemorySymbol,
+  isBalanceCorrect,
   isLockCorrect,
   isPowerCorrect,
+  isRouteCorrect,
   isSignalCorrect,
   restoreState,
+  routePowerLength,
   signalDistance,
 } from "./game-engine";
 
@@ -21,7 +28,7 @@ describe("game engine", () => {
     expect(isSignalCorrect({ carrier: 7, gain: 3, phase: 2 })).toBe(true);
   });
 
-  it("resets an incorrect memory sequence and completes a correct one", () => {
+  it("resets an incorrect memory sequence and unlocks the route", () => {
     let state = createInitialState();
     state = {
       ...state,
@@ -42,15 +49,45 @@ describe("game engine", () => {
       state = enterMemorySymbol(state, symbol).state;
     }
     expect(state.solved.memory).toBe(true);
-    expect(currentStage(state)).toBe("lock");
+    expect(currentStage(state)).toBe("route");
   });
 
-  it("validates the derived lock code", () => {
-    expect(isLockCorrect([3, 7, 5])).toBe(true);
-    expect(isLockCorrect([3, 7, 4])).toBe(false);
+  it("powers only the correct prefix of the route", () => {
+    expect(routePowerLength(ROUTE_TARGET)).toBe(9);
+    expect(isRouteCorrect(ROUTE_TARGET)).toBe(true);
+
+    const broken = [...ROUTE_TARGET];
+    broken[4] = 1;
+    expect(routePowerLength(broken)).toBe(4);
+    expect(isRouteCorrect(broken)).toBe(false);
   });
 
-  it("rejects malformed persisted data", () => {
+  it("validates the balance rules and final five-part code", () => {
+    expect(balanceDistance(BALANCE_TARGET)).toBe(0);
+    expect(isBalanceCorrect(BALANCE_TARGET)).toBe(true);
+    expect(isBalanceCorrect([2, 3, 4, 3])).toBe(false);
+    expect(isLockCorrect([3, 7, 5, 4, 2])).toBe(true);
+    expect(isLockCorrect([3, 7, 5, 4, 1])).toBe(false);
+  });
+
+  it("tracks six solved stages before completion", () => {
+    const state = createInitialState();
+    expect(completedCount(state)).toBe(0);
+    const complete = {
+      ...state,
+      solved: Object.fromEntries(
+        Object.keys(state.solved).map((stage) => [stage, true]),
+      ) as typeof state.solved,
+    };
+    expect(completedCount(complete)).toBe(6);
+    expect(currentStage(complete)).toBe("complete");
+  });
+
+  it("restores only complete version-two data", () => {
+    const state = createInitialState();
+    state.started = true;
+    state.route = [...ROUTE_TARGET];
+    expect(restoreState(JSON.stringify(state))).toEqual(state);
     expect(restoreState("{bad json")).toEqual(createInitialState());
     expect(
       restoreState(JSON.stringify({ version: 1, power: ["yes"] })),

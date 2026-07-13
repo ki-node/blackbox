@@ -1,6 +1,6 @@
 /* global self, caches, URL, fetch, Response */
 
-const cacheName = "black-box-shell-v1";
+const cacheName = "black-box-shell-v2";
 const shell = [
   "./",
   "./manifest.webmanifest",

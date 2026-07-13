@@ -1,7 +1,7 @@
 {
   "name": "BLACK BOX – Rettungsmission",
   "short_name": "BLACK BOX",
-  "description": "Eine kurze interaktive Rettungsmission für die Crew der Asteria.",
+  "description": "Eine interaktive Rettungsmission mit sechs Maschinenrätseln für die Crew der Asteria.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

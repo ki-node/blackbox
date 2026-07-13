@@ -179,7 +179,8 @@ test("lets the player control every story page and ends with a clear answer", as
   await finale.getByRole("button", { name: "Zur Übersicht" }).click();
   await expect(finale).toBeHidden();
   await expect(page.locator("[data-complete-panel]")).toBeVisible();
-  await expect(page.locator(".game-actions")).toBeHidden();
+  await expect(page.locator(".game-actions")).toBeVisible();
+  await expect(page.locator(".game-actions")).toBeInViewport();
   await expect(
     page.getByRole("button", { name: "Finale erneut ansehen" }),
   ).toBeInViewport();
@@ -263,7 +264,7 @@ test("persists the current single-screen level locally", async ({ page }) => {
 test("uses an app-like single-screen layout without clipped progress labels", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 664 });
+  await page.setViewportSize({ width: 390, height: 500 });
   await page.reload();
   await startMission(page);
 
@@ -273,6 +274,15 @@ test("uses an app-like single-screen layout without clipped progress labels", as
     clientWidth: document.documentElement.clientWidth,
     scrollWidth: document.documentElement.scrollWidth,
     bodyOverflow: getComputedStyle(document.body).overflow,
+    headerBottom: document
+      .querySelector(".site-header")
+      ?.getBoundingClientRect().bottom,
+    gameTop: document.querySelector(".game-shell")?.getBoundingClientRect().top,
+    gameBottom: document.querySelector(".game-shell")?.getBoundingClientRect()
+      .bottom,
+    machineBottom: document
+      .querySelector("[data-machine]")
+      ?.getBoundingClientRect().bottom,
     currentLabel: document.querySelector("[data-stage-name]")?.textContent,
     progressLabels: [
       ...document.querySelectorAll<HTMLElement>(".progress li strong"),
@@ -284,6 +294,9 @@ test("uses an app-like single-screen layout without clipped progress labels", as
   expect(metrics.scrollHeight).toBeLessThanOrEqual(metrics.clientHeight + 1);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
   expect(metrics.bodyOverflow).toBe("hidden");
+  expect(metrics.gameTop).toBeCloseTo(metrics.headerBottom ?? 0, 0);
+  expect(metrics.gameBottom).toBeLessThanOrEqual(metrics.clientHeight + 1);
+  expect(metrics.machineBottom).toBeLessThanOrEqual(metrics.clientHeight + 1);
   expect(metrics.currentLabel).toBe("Energie");
   expect(
     metrics.progressLabels.every(({ overflow }) => overflow !== "ellipsis"),

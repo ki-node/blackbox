@@ -138,6 +138,7 @@ button:disabled {
   position: relative;
   z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -169,9 +170,11 @@ button:disabled {
 
 .header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.35rem;
+  max-width: 100%;
 }
 
 .utility-button {

@@ -9,9 +9,9 @@ async function solvePower(page: Page): Promise<void> {
 }
 
 async function solveSignal(page: Page): Promise<void> {
-  await page.getByLabel(/Carrier/).fill("7");
-  await page.getByLabel(/Gain/).fill("3");
-  await page.getByLabel(/Phase/).fill("2");
+  await page.locator('[data-signal="carrier"]').fill("7");
+  await page.locator('[data-signal="gain"]').fill("3");
+  await page.locator('[data-signal="phase"]').fill("2");
   await page.getByRole("button", { name: "Signal koppeln" }).click();
 }
 
@@ -144,6 +144,10 @@ test("has no automatically detectable WCAG A/AA violations", async ({
     browserName === "webkit",
     "axe-core is validated in mobile and desktop Chromium.",
   );
+  await solvePower(page);
+  await solveSignal(page);
+  await solveMemory(page);
+
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
@@ -168,7 +172,7 @@ test("honours reduced motion and supports keyboard activation", async ({
     });
   expect(Number.parseFloat(animationDuration)).toBeLessThanOrEqual(0.001);
 
-  const relay = page.getByRole("button", { name: /R1 AUS/ });
+  const relay = page.locator('[data-relay="0"]');
   await relay.focus();
   await page.keyboard.press("Enter");
   await expect(relay).toHaveAttribute("aria-pressed", "true");

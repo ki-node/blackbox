@@ -102,9 +102,7 @@ test("restores all systems and reveals the final transmission", async ({
   await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
   await expect(dialog).toContainText("6 VON 6 LEVELS ABGESCHLOSSEN");
   await expect(dialog).toContainText("Du bist fertig");
-  await dialog
-    .getByRole("button", { name: "Zur Missionsübersicht" })
-    .click();
+  await dialog.getByRole("button", { name: "Zur Missionsübersicht" }).click();
   await expect(
     page.locator('[data-module="memory"] [data-module-status]'),
   ).toHaveText("RESTORED");

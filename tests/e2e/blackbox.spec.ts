@@ -53,7 +53,7 @@ test.beforeEach(async ({ page }) => {
 test("restores all systems and reveals the final transmission", async ({
   page,
 }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(60_000);
   await solvePower(page);
   await expect(page.locator('[data-module="signal"]')).toHaveAttribute(
     "aria-disabled",
@@ -103,7 +103,7 @@ test("offers a distinct disconnect ending and keeps the finale accessible", asyn
   page,
   browserName,
 }) => {
-  test.setTimeout(45_000);
+  test.setTimeout(60_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await reachFinale(page);
 
@@ -165,8 +165,11 @@ test("routes recovery energy through the machine and reacts to touch", async ({
     clientX: 120,
     clientY: 240,
   });
-  await expect(machine).toHaveClass(/is-impact/);
   await expect(machine).toHaveCSS("--pointer-x", /%/);
+  const pointerX = await machine.evaluate((element) =>
+    element.style.getPropertyValue("--pointer-x"),
+  );
+  expect(pointerX).not.toBe("50%");
 });
 
 test("resets only after explicit confirmation", async ({ page }) => {

@@ -11,8 +11,17 @@
       content="BLACK BOX ist eine kurze, barrierearme Rettungsmission direkt im Browser."
     />
     <meta name="theme-color" content="#070908" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="BLACK BOX" />
     <title>BLACK BOX – Interaktives Maschinenrätsel</title>
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
   </head>
   <body>
     <a class="skip-link" href="#machine">Zur Maschine springen</a>
@@ -27,6 +36,9 @@
         <span>BLACK</span><i aria-hidden="true"></i><span>BOX</span>
       </a>
       <div class="header-actions">
+        <button class="utility-button" type="button" data-install>
+          Als App nutzen
+        </button>
         <button
           class="utility-button"
           type="button"
@@ -420,6 +432,27 @@
       <p>NO ACCOUNT · NO TRACKING · LOCAL PROGRESS</p>
       <p>BLACK BOX / <span data-year></span></p>
     </footer>
+
+    <dialog
+      class="install-dialog"
+      data-install-dialog
+      aria-labelledby="install-title"
+    >
+      <p class="eyebrow">OHNE BROWSERLEISTE SPIELEN</p>
+      <h2 id="install-title">BLACK BOX als App nutzen</h2>
+      <p>
+        Auf dem iPhone: Tippe in Safari auf <strong>Teilen</strong>, dann auf
+        <strong>Zum Home-Bildschirm</strong>. Starte BLACK BOX anschließend über
+        das neue Symbol. So öffnet sich die Mission ohne Safari-Leisten.
+      </p>
+      <p>
+        Auf Android oder Desktop-Chrome kannst du im Browsermenü
+        <strong>App installieren</strong> wählen.
+      </p>
+      <button class="action-button" type="button" data-close-install>
+        Verstanden
+      </button>
+    </dialog>
 
     <dialog
       class="transmission"

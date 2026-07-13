@@ -230,6 +230,48 @@ test("prevents double-tap zoom on rapid controls without disabling page zoom", a
   expect(viewport).not.toContain("maximum-scale=1");
 });
 
+test("provides an installable standalone app experience", async ({
+  page,
+  request,
+}) => {
+  const manifestResponse = await request.get("./manifest.webmanifest");
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest = (await manifestResponse.json()) as {
+    display: string;
+    icons: Array<{ purpose: string }>;
+    start_url: string;
+  };
+  expect(manifest.display).toBe("standalone");
+  expect(manifest.start_url).toBe("./");
+  expect(manifest.icons[0]?.purpose).toContain("maskable");
+
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-display-mode",
+    "browser",
+  );
+  await expect(
+    page.getByRole("button", { name: "Als App nutzen" }),
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(async () =>
+        Boolean(await navigator.serviceWorker.getRegistration()),
+      ),
+    )
+    .toBe(true);
+
+  await page.locator("[data-install-dialog]").evaluate((element) => {
+    (element as HTMLDialogElement).showModal();
+  });
+  const dialog = page.getByRole("dialog", {
+    name: "BLACK BOX als App nutzen",
+  });
+  await expect(dialog).toContainText("Zum Home-Bildschirm");
+  await expect(dialog).toContainText("ohne Safari-Leisten");
+  await dialog.getByRole("button", { name: "Verstanden" }).click();
+  await expect(dialog).toBeHidden();
+});
+
 test("resets only after explicit confirmation", async ({ page }) => {
   await solvePower(page);
   const reset = page.getByRole("button", { name: "Zurücksetzen" });

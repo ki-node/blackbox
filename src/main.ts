@@ -1,6 +1,7 @@
 import "./styles.css";
 import { AudioController } from "./audio-controller";
 import { FinaleController } from "./finale-controller";
+import { InstallController } from "./install-controller";
 import { MachineEffectsController } from "./machine-effects-controller";
 import {
   MEMORY_SEQUENCE,
@@ -66,6 +67,10 @@ function requireElement<T extends Element>(
 class BlackBoxApp {
   private state = restoreState(localStorage.getItem(STORAGE_KEY));
   private readonly audio = new AudioController();
+  private readonly install = new InstallController(
+    requireElement<HTMLButtonElement>("[data-install]"),
+    requireElement<HTMLDialogElement>("[data-install-dialog]"),
+  );
   private readonly effects = new MachineEffectsController(
     requireElement<HTMLElement>("[data-machine]"),
   );
@@ -524,8 +529,17 @@ class BlackBoxApp {
     this.scope.destroy();
     this.finale.destroy();
     this.effects.destroy();
+    this.install.destroy();
     this.audio.destroy();
   }
 }
 
 new BlackBoxApp();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker.register(
+      new URL("sw.js", document.baseURI).pathname,
+    );
+  });
+}

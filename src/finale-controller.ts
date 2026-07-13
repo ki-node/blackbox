@@ -72,6 +72,7 @@ export class FinaleController {
 
   public open(): void {
     window.clearTimeout(this.replyTimer);
+    this.setReplyStatus("");
     this.showScreen("open");
     this.renderer.stop();
     document.documentElement.dataset.ending = "rescue";
@@ -80,6 +81,7 @@ export class FinaleController {
 
   public reset(): void {
     window.clearTimeout(this.replyTimer);
+    this.setReplyStatus("");
     this.renderer.stop();
     delete document.documentElement.dataset.ending;
     this.showScreen("open", false);
@@ -116,6 +118,7 @@ export class FinaleController {
       () => {
         reply.disabled = false;
         reply.textContent = "Antwort der Asteria lesen";
+        this.setReplyStatus("Antwort der Asteria ist bereit.");
       },
       reducedMotion ? 0 : 2_600,
     );
@@ -143,6 +146,13 @@ export class FinaleController {
         )
         ?.focus();
     });
+  }
+
+  private setReplyStatus(message: string): void {
+    requireElement<HTMLElement>(
+      "[data-reply-status]",
+      this.dialog,
+    ).textContent = message;
   }
 
   private listen(

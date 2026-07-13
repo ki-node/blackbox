@@ -116,7 +116,6 @@ export class FinaleController {
       () => {
         reply.disabled = false;
         reply.textContent = "Antwort der Asteria lesen";
-        reply.focus();
       },
       reducedMotion ? 0 : 2_600,
     );

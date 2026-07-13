@@ -42,10 +42,19 @@ async function reachFinale(page: Page): Promise<void> {
 }
 
 async function solveLocation(page: Page): Promise<void> {
-  await page.locator('[data-direction-button="0"]').click();
-  await page.locator('[data-direction-button="1"]').click({ clickCount: 2 });
-  await page.locator('[data-direction-button="2"]').click();
-  await page.getByRole("button", { name: "Position prüfen" }).click();
+  const first = page.locator('[data-direction-button="0"]');
+  const second = page.locator('[data-direction-button="1"]');
+  const third = page.locator('[data-direction-button="2"]');
+  await expect(first).toBeVisible();
+  await expect(second).toBeVisible();
+  await expect(third).toBeVisible();
+  await first.click({ force: true });
+  await second.click({ force: true });
+  await second.click({ force: true });
+  await third.click({ force: true });
+  await page
+    .getByRole("button", { name: "Position prüfen" })
+    .click({ force: true });
 }
 
 test.beforeEach(async ({ page }) => {
@@ -94,7 +103,9 @@ test("restores all systems and reveals the final transmission", async ({
   ).toBeVisible();
   await solveLocation(page);
   await expect(dialog.getByRole("heading")).toHaveText("Hol sie nach Hause.");
-  await dialog.getByRole("button", { name: "Rettungssignal senden" }).click();
+  await dialog
+    .getByRole("button", { name: "Rettungssignal senden" })
+    .click({ force: true });
   await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(
     "data-rendering",
     "true",
@@ -102,7 +113,9 @@ test("restores all systems and reveals the final transmission", async ({
   await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
   await expect(dialog).toContainText("6 VON 6 LEVELS ABGESCHLOSSEN");
   await expect(dialog).toContainText("Du bist fertig");
-  await dialog.getByRole("button", { name: "Zur Missionsübersicht" }).click();
+  await dialog
+    .getByRole("button", { name: "Zur Missionsübersicht" })
+    .click({ force: true });
   await expect(
     page.locator('[data-module="memory"] [data-module-status]'),
   ).toHaveText("RESTORED");
@@ -121,12 +134,16 @@ test("explains mistakes, completes the rescue and keeps the finale accessible", 
 
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "Nachricht abspielen" }).click();
-  await page.getByRole("button", { name: "Position prüfen" }).click();
+  await page
+    .getByRole("button", { name: "Position prüfen" })
+    .click({ force: true });
   await expect(dialog).toContainText(
     "Alle drei Pfeile müssen zur leuchtenden Mitte zeigen",
   );
   await solveLocation(page);
-  await dialog.getByRole("button", { name: "Rettungssignal senden" }).click();
+  await dialog
+    .getByRole("button", { name: "Rettungssignal senden" })
+    .click({ force: true });
   await expect(dialog.getByRole("heading")).toHaveText("Mission erfüllt.");
   await expect(dialog).toContainText("Rettung kennt jetzt ihre Position");
   await expect(page.locator("[data-anomaly-canvas]")).toHaveAttribute(

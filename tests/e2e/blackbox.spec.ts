@@ -83,7 +83,7 @@ test("restores all systems and reveals the final transmission", async ({
   await expect(dialog.getByRole("heading", { level: 2 })).toHaveText(
     "Die Box war nie leer.",
   );
-  await expect(dialog).toContainText("Das Signal kam aus dem Inneren");
+  await expect(dialog).toContainText("Das Signal kommt aus dem Inneren");
   await expect(
     dialog.getByRole("heading", { name: "Kalibrierung abgeschlossen." }),
   ).toBeVisible();

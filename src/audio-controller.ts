@@ -21,9 +21,18 @@ interface NoiseCue {
 export class AudioController {
   private context: AudioContext | undefined;
   private enabled = true;
+  private unlocked = false;
+  private readonly sources = new Set<AudioScheduledSourceNode>();
 
   public get isEnabled(): boolean {
     return this.enabled;
+  }
+
+  /**
+   * Unlocks audio after a trusted pointer or keyboard interaction.
+   */
+  public unlock(): void {
+    this.unlocked = true;
   }
 
   public toggle(): boolean {
@@ -357,15 +366,38 @@ export class AudioController {
     });
   }
 
+  public stopAll(): void {
+    this.sources.forEach((source) => {
+      try {
+        source.stop();
+      } catch {
+        // A source that already ended needs no further cleanup.
+      }
+      source.disconnect();
+    });
+    this.sources.clear();
+  }
+
   public destroy(): void {
-    if (this.context) void this.context.close();
+    this.stopAll();
+    if (this.context) void this.context.close().catch(() => undefined);
     this.context = undefined;
+    this.unlocked = false;
   }
 
   private activeContext(): AudioContext | undefined {
-    if (!this.enabled) return undefined;
-    this.context ??= new AudioContext();
-    if (this.context.state === "suspended") void this.context.resume();
+    if (!this.enabled || !this.unlocked || !("AudioContext" in window)) {
+      return undefined;
+    }
+
+    try {
+      this.context ??= new AudioContext();
+    } catch {
+      return undefined;
+    }
+    if (this.context.state === "suspended") {
+      void this.context.resume().catch(() => undefined);
+    }
     return this.context;
   }
 
@@ -388,6 +420,7 @@ export class AudioController {
     gain.gain.exponentialRampToValueAtTime(cue.volume, start + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
     oscillator.connect(gain).connect(context.destination);
+    this.trackSource(oscillator);
     oscillator.start(start);
     oscillator.stop(end + 0.03);
   }
@@ -416,7 +449,20 @@ export class AudioController {
     gain.gain.exponentialRampToValueAtTime(cue.volume, start + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
     source.connect(filter).connect(gain).connect(context.destination);
+    this.trackSource(source);
     source.start(start);
     source.stop(end + 0.02);
+  }
+
+  private trackSource(source: AudioScheduledSourceNode): void {
+    this.sources.add(source);
+    source.addEventListener(
+      "ended",
+      () => {
+        this.sources.delete(source);
+        source.disconnect();
+      },
+      { once: true },
+    );
   }
 }

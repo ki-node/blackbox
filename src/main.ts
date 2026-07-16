@@ -1,5 +1,6 @@
 import "./styles.css";
 import "./game-shell.css";
+import { ApplicationLifecycle } from "./application-lifecycle";
 import { AudioController } from "./audio-controller";
 import { FeedbackController } from "./feedback-controller";
 import { FinaleController } from "./finale-controller";
@@ -27,9 +28,11 @@ import {
   type Stage,
   type SymbolName,
 } from "./game-engine";
+import { HapticsController } from "./haptics-controller";
 import { InstallController } from "./install-controller";
 import { InputModalityController } from "./input-modality-controller";
 import { MachineEffectsController } from "./machine-effects-controller";
+import { runtime } from "./runtime";
 import { ScopeRenderer } from "./scope-renderer";
 
 const STORAGE_KEY = "black-box-progress-v2";
@@ -145,15 +148,23 @@ function requireElement<T extends Element>(
   return element;
 }
 
-class BlackBoxApp {
+export class BlackBoxApp {
   private readonly inputModality = new InputModalityController();
   private state = restoreState(localStorage.getItem(STORAGE_KEY));
   private readonly audio = new AudioController();
-  private readonly feedback = new FeedbackController(this.audio);
-  private readonly install = new InstallController(
-    requireElement<HTMLButtonElement>("[data-install]"),
-    requireElement<HTMLDialogElement>("[data-install-dialog]"),
-  );
+  private readonly haptics = new HapticsController({
+    context: runtime.context,
+    navigator,
+    selfWindow: window,
+  });
+  private readonly feedback = new FeedbackController(this.audio, this.haptics);
+  private readonly install =
+    __BLACKBOX_RUNTIME_CONTEXT__ === "web"
+      ? new InstallController(
+          requireElement<HTMLButtonElement>("[data-install]"),
+          requireElement<HTMLDialogElement>("[data-install-dialog]"),
+        )
+      : undefined;
   private readonly machine = requireElement<HTMLElement>("[data-machine]");
   private readonly effects = new MachineEffectsController(this.machine);
   private readonly scope: ScopeRenderer;
@@ -171,11 +182,16 @@ class BlackBoxApp {
   );
   private readonly finale: FinaleController;
   private readonly cleanup: Array<() => void> = [];
+  private readonly timers = new Set<number>();
+  private readonly animationFrames = new Set<number>();
   private sequenceTimers: number[] = [];
   private resetTimer = 0;
   private isPlaying = false;
+  private destroyed = false;
+  private resizeObserver: ResizeObserver | undefined;
 
   public constructor() {
+    document.documentElement.dataset.runtimeContext = runtime.context;
     this.inputModality.init();
     this.scope = new ScopeRenderer(
       requireElement<HTMLCanvasElement>("[data-scope]"),
@@ -189,11 +205,13 @@ class BlackBoxApp {
       () => this.focusCompletion(),
     );
     this.bindEvents();
+    this.registerServiceWorker();
+    this.observeViewport();
     this.render();
     this.setStatus(stageCopy[currentStage(this.state)]);
 
     if (this.state.started) {
-      window.setTimeout(() => {
+      this.timeout(() => {
         if (currentStage(this.state) === "complete") this.finale.open();
         else this.openPendingStory();
       }, 220);
@@ -204,17 +222,35 @@ class BlackBoxApp {
     element: EventTarget,
     type: string,
     listener: EventListener,
+    options?: boolean | AddEventListenerOptions,
   ): void {
-    element.addEventListener(type, listener);
-    this.cleanup.push(() => element.removeEventListener(type, listener));
+    element.addEventListener(type, listener, options);
+    this.cleanup.push(() =>
+      element.removeEventListener(type, listener, options),
+    );
   }
 
   private bindEvents(): void {
-    for (const selector of ["[data-install]", "[data-close-install]"]) {
-      this.listen(requireElement(selector), "click", (event) =>
-        this.feedback.tap(event.currentTarget as HTMLElement),
-      );
+    if (__BLACKBOX_RUNTIME_CONTEXT__ === "web") {
+      for (const selector of ["[data-install]", "[data-close-install]"]) {
+        this.listen(requireElement(selector), "click", (event) =>
+          this.feedback.tap(event.currentTarget as HTMLElement),
+        );
+      }
     }
+
+    this.listen(document, "pointerdown", () => this.audio.unlock(), true);
+    this.listen(
+      document,
+      "keydown",
+      (event) => {
+        const key = (event as KeyboardEvent).key;
+        if (!["Alt", "Control", "Meta", "Shift"].includes(key)) {
+          this.audio.unlock();
+        }
+      },
+      true,
+    );
 
     this.listen(requireElement("[data-start]"), "click", (event) => {
       this.feedback.tap(event.currentTarget as HTMLElement);
@@ -222,9 +258,7 @@ class BlackBoxApp {
       this.persist();
       this.render();
       this.setStatus(stageCopy.power);
-      window.requestAnimationFrame(() =>
-        requireElement<HTMLElement>("#power-title").focus(),
-      );
+      this.nextFrame(() => requireElement<HTMLElement>("#power-title").focus());
     });
 
     document
@@ -351,8 +385,12 @@ class BlackBoxApp {
       this.feedback.tap();
       this.finale.open();
     });
-    this.listen(window, "resize", () => this.scope.resize());
-    this.listen(window, "beforeunload", () => this.destroy());
+    this.listen(window, "resize", () => this.handleViewportChange());
+    if (window.visualViewport) {
+      this.listen(window.visualViewport, "resize", () =>
+        this.handleViewportChange(),
+      );
+    }
   }
 
   private checkPower(): void {
@@ -410,7 +448,7 @@ class BlackBoxApp {
         const echo = requireElement<HTMLElement>(`[data-echo="${symbol}"]`);
         echo.classList.add("is-active");
         this.echoAnnouncement.textContent = `Form ${index + 1}: ${symbolLabels[symbol]}`;
-        this.feedback.memory(echo, symbol);
+        this.feedback.memory(echo, symbol, true, false);
         const offTimer = window.setTimeout(
           () => echo.classList.remove("is-active"),
           440,
@@ -547,7 +585,7 @@ class BlackBoxApp {
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    window.setTimeout(() => this.finale.open(), reducedMotion ? 0 : 720);
+    this.timeout(() => this.finale.open(), reducedMotion ? 0 : 720);
   }
 
   private completeStage(
@@ -572,7 +610,7 @@ class BlackBoxApp {
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    window.setTimeout(() => this.openPendingStory(), reducedMotion ? 0 : 520);
+    this.timeout(() => this.openPendingStory(), reducedMotion ? 0 : 520);
   }
 
   private openPendingStory(): void {
@@ -607,6 +645,7 @@ class BlackBoxApp {
   private continueStory(): void {
     const completed = completedCount(this.state);
     this.feedback.tap(requireElement("[data-story-continue]"));
+    this.audio.stopAll();
     this.state = { ...this.state, storySeen: completed };
     this.persist();
     this.storyDialog.close();
@@ -667,7 +706,7 @@ class BlackBoxApp {
 
     button.dataset.armed = "true";
     button.textContent = "Wirklich?";
-    this.resetTimer = window.setTimeout(() => {
+    this.resetTimer = this.timeout(() => {
       delete button.dataset.armed;
       button.textContent = "Neustart";
     }, 4000);
@@ -675,6 +714,7 @@ class BlackBoxApp {
 
   private reset(): void {
     this.clearSequenceTimers();
+    this.audio.stopAll();
     this.finale.reset();
     if (this.storyDialog.open) this.storyDialog.close();
     if (this.hintDialog.open) this.hintDialog.close();
@@ -821,7 +861,7 @@ class BlackBoxApp {
     this.effects.updateProgress(solvedCount);
 
     if (stage === "signal") {
-      window.requestAnimationFrame(() => this.scope.resize());
+      this.nextFrame(() => this.scope.resize());
     }
   }
 
@@ -836,7 +876,7 @@ class BlackBoxApp {
     const display = this.status.closest<HTMLElement>(".machine__display");
     display?.classList.toggle("is-error", error);
     display?.classList.remove("is-updated");
-    window.requestAnimationFrame(() => display?.classList.add("is-updated"));
+    this.nextFrame(() => display?.classList.add("is-updated"));
   }
 
   private persistAndRender(): void {
@@ -858,13 +898,13 @@ class BlackBoxApp {
       this.focusCompletion();
       return;
     }
-    window.requestAnimationFrame(() =>
+    this.nextFrame(() =>
       requireElement<HTMLElement>(`#${stage}-title`).focus(),
     );
   }
 
   private focusCompletion(): void {
-    window.requestAnimationFrame(() =>
+    this.nextFrame(() =>
       requireElement<HTMLElement>("[data-complete-panel] h3").focus(),
     );
   }
@@ -889,25 +929,107 @@ class BlackBoxApp {
     this.toggleSymbolButtons(false);
   }
 
-  private destroy(): void {
+  private observeViewport(): void {
+    this.syncViewportHeight();
+    if (!("ResizeObserver" in window)) return;
+
+    this.resizeObserver = new ResizeObserver(() => this.scope.resize());
+    this.resizeObserver.observe(
+      requireElement<HTMLCanvasElement>("[data-scope]"),
+    );
+  }
+
+  private registerServiceWorker(): void {
+    if (
+      __BLACKBOX_RUNTIME_CONTEXT__ !== "web" ||
+      !("serviceWorker" in navigator)
+    ) {
+      return;
+    }
+
+    const register = (): void => {
+      void navigator.serviceWorker
+        .register(`${import.meta.env.BASE_URL}sw.js`, {
+          scope: import.meta.env.BASE_URL,
+        })
+        .catch(() => undefined);
+    };
+
+    if (document.readyState === "complete") register();
+    else this.listen(window, "load", register, { once: true });
+  }
+
+  private handleViewportChange(): void {
+    this.syncViewportHeight();
+    this.scope.resize();
+  }
+
+  private syncViewportHeight(): void {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty(
+      "--app-height",
+      `${Math.max(1, Math.round(height))}px`,
+    );
+  }
+
+  private timeout(callback: () => void, delay: number): number {
+    const timer = window.setTimeout(() => {
+      this.timers.delete(timer);
+      if (!this.destroyed) callback();
+    }, delay);
+    this.timers.add(timer);
+    return timer;
+  }
+
+  private nextFrame(callback: () => void): number {
+    const frame = window.requestAnimationFrame(() => {
+      this.animationFrames.delete(frame);
+      if (!this.destroyed) callback();
+    });
+    this.animationFrames.add(frame);
+    return frame;
+  }
+
+  public destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
     this.clearSequenceTimers();
     window.clearTimeout(this.resetTimer);
+    this.timers.forEach((timer) => window.clearTimeout(timer));
+    this.timers.clear();
+    this.animationFrames.forEach((frame) => window.cancelAnimationFrame(frame));
+    this.animationFrames.clear();
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
     this.cleanup.forEach((remove) => remove());
+    this.cleanup.length = 0;
     this.scope.destroy();
     this.finale.destroy();
     this.effects.destroy();
-    this.install.destroy();
+    this.install?.destroy();
     this.inputModality.destroy();
+    this.feedback.destroy();
     this.audio.destroy();
+    [this.storyDialog, this.hintDialog].forEach((dialog) => {
+      if (dialog.open) dialog.close();
+    });
   }
 }
 
-new BlackBoxApp();
+const lifecycle = new ApplicationLifecycle(() => new BlackBoxApp());
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`, {
-      scope: import.meta.env.BASE_URL,
-    });
-  });
+/**
+ * Initializes the singleton Blackbox application.
+ */
+export function init(): BlackBoxApp {
+  return lifecycle.init();
 }
+
+/**
+ * Destroys the current Blackbox application and all owned resources.
+ */
+export function destroy(): void {
+  lifecycle.destroy();
+}
+
+init();

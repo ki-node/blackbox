@@ -57,10 +57,15 @@ export class InstallController {
       return;
     }
 
-    await this.deferredPrompt.prompt();
-    const choice = await this.deferredPrompt.userChoice;
-    if (choice.outcome === "accepted") this.button.hidden = true;
-    this.deferredPrompt = undefined;
+    try {
+      await this.deferredPrompt.prompt();
+      const choice = await this.deferredPrompt.userChoice;
+      if (choice.outcome === "accepted") this.button.hidden = true;
+    } catch {
+      // Installation remains optional when the browser rejects the prompt.
+    } finally {
+      this.deferredPrompt = undefined;
+    }
   }
 
   private listen(

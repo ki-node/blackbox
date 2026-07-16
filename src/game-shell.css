@@ -1447,6 +1447,120 @@ button[data-feedback="tap"],
   }
 }
 
+html[data-runtime-context="embedded"] {
+  --app-header-height: 0px;
+  --safe-left: 0.65rem;
+  --safe-right: 0.65rem;
+
+  width: 100%;
+  height: var(--app-height, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html[data-runtime-context="embedded"] body,
+html[data-runtime-context="embedded"].has-started body {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html[data-runtime-context="embedded"] .site-header {
+  position: fixed;
+  top: 0.25rem;
+  right: 0.25rem;
+  left: auto;
+  z-index: 30;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+html[data-runtime-context="embedded"] .wordmark {
+  display: none;
+}
+
+html[data-runtime-context="embedded"] .header-actions {
+  gap: 0.15rem;
+  padding: 0.15rem;
+  border: 1px solid rgba(109, 123, 115, 0.55);
+  background: rgba(5, 7, 6, 0.9);
+  backdrop-filter: blur(0.65rem);
+}
+
+html[data-runtime-context="embedded"] .utility-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+html[data-runtime-context="embedded"] .game-shell,
+html[data-runtime-context="embedded"] .intro,
+html[data-runtime-context="embedded"] .machine.app-game {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+html[data-runtime-context="embedded"] .game-shell {
+  overflow: hidden;
+}
+
+html[data-runtime-context="embedded"] .intro {
+  align-content: safe center;
+  margin: 0 auto;
+  padding: 3.4rem 0.75rem 0.75rem;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+}
+
+html[data-runtime-context="embedded"] .machine.app-game {
+  padding: 0.45rem 0.65rem;
+}
+
+html[data-runtime-context="embedded"] .machine__topline {
+  padding-right: 9rem;
+}
+
+html[data-runtime-context="embedded"] .chapter-dialog,
+html[data-runtime-context="embedded"] .hint-dialog {
+  max-height: calc(var(--app-height, 100dvh) - 1rem);
+  overscroll-behavior: contain;
+}
+
+html[data-runtime-context="embedded"] .transmission.finale {
+  height: var(--app-height, 100dvh);
+  padding: 0.5rem;
+}
+
+html[data-runtime-context="embedded"] .signal-adjuster > button,
+html[data-runtime-context="embedded"] .symbol-bank button,
+html[data-runtime-context="embedded"] .action-button,
+html[data-runtime-context="embedded"] .secondary-button,
+html[data-runtime-context="embedded"] .text-button,
+html[data-runtime-context="embedded"] .game-actions button {
+  min-height: 44px;
+}
+
+@media (max-height: 30rem) {
+  html[data-runtime-context="embedded"] .intro {
+    align-content: start;
+  }
+
+  html[data-runtime-context="embedded"] .intro h1 {
+    font-size: clamp(2.25rem, 9vw, 4rem);
+  }
+
+  html[data-runtime-context="embedded"] .machine__state {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .intro__signal i,
   .chapter-dialog__signal i,

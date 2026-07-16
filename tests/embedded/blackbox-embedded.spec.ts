@@ -72,7 +72,7 @@ test("sends only the versioned semantic haptic message to a host", async ({
       window.messages = [];
       window.addEventListener("message", (event) => window.messages.push(event.data));
     </script>
-    <iframe title="Blackbox" src="./"></iframe>
+    <iframe title="Blackbox" src="./" style="border: 0; width: 100vw; height: 100vh"></iframe>
   `);
   const frame = page.frameLocator('iframe[title="Blackbox"]');
   await frame.getByRole("button", { name: "Verbindung herstellen" }).click();

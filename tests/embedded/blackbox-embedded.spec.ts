@@ -38,6 +38,7 @@ test("keeps the document fixed and controls reachable at iPhone heights", async 
     { width: 844, height: 390 },
   ]) {
     await page.setViewportSize(viewport);
+    await page.evaluate(() => localStorage.clear());
     await page.reload();
     const start = page.getByRole("button", { name: "Verbindung herstellen" });
     await expect(start).toBeVisible();
@@ -66,13 +67,12 @@ test("keeps the document fixed and controls reachable at iPhone heights", async 
 test("sends only the versioned semantic haptic message to a host", async ({
   page,
 }) => {
-  await page.goto("about:blank");
   await page.setContent(`
     <script>
       window.messages = [];
       window.addEventListener("message", (event) => window.messages.push(event.data));
     </script>
-    <iframe title="Blackbox" src="http://127.0.0.1:4174/fixtures/deep/orbit/projects/blackbox/"></iframe>
+    <iframe title="Blackbox" src="./"></iframe>
   `);
   const frame = page.frameLocator('iframe[title="Blackbox"]');
   await frame.getByRole("button", { name: "Verbindung herstellen" }).click();

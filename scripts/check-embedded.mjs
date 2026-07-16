@@ -52,9 +52,13 @@ if (!files.length) throw new Error("dist-embedded is empty");
 
 for (const file of files.filter((path) => /\.(?:html|css|js)$/.test(path))) {
   const content = await readFile(file, "utf8");
+  const referencesContent = content.replace(
+    /url\((["'])data:[\s\S]*?\1\)/gi,
+    "url(data:)",
+  );
   const references = [
-    ...content.matchAll(/(?:src|href)=["']([^"']+)["']/gi),
-    ...content.matchAll(/url\(["']?([^"')]+)["']?\)/gi),
+    ...referencesContent.matchAll(/(?:src|href)=["']([^"']+)["']/gi),
+    ...referencesContent.matchAll(/url\(["']?([^"')]+)["']?\)/gi),
   ];
   references.forEach((match) => assertLocalReference(match[1], file));
   if (/serviceWorker\s*\.\s*register/.test(content)) {

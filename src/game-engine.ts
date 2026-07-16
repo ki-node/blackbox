@@ -250,33 +250,59 @@ function isNumberArray(
   );
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function boundedInteger(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+  fallback: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(maximum, Math.max(minimum, Math.trunc(value)));
+}
+
 export function restoreState(raw: string | null): GameState {
   if (!raw) return createInitialState();
 
   try {
-    const candidate = JSON.parse(raw) as Partial<GameState>;
+    const parsed: unknown = JSON.parse(raw);
     const initial = createInitialState();
-    if (
-      candidate.version !== 2 ||
-      !Array.isArray(candidate.power) ||
-      candidate.power.length !== 4 ||
-      !candidate.power.every((value) => typeof value === "boolean") ||
-      !candidate.signal ||
-      !isNumberArray(candidate.route, 9, 3) ||
-      !isNumberArray(candidate.balance, 4, 4) ||
-      !isNumberArray(candidate.lock, 5) ||
-      !candidate.solved
-    ) {
-      return initial;
-    }
+    if (!isRecord(parsed) || parsed.version !== 2) return initial;
+    const candidate = parsed;
 
-    const signal = candidate.signal;
-    if (![signal.carrier, signal.gain, signal.phase].every(isDigit))
-      return initial;
+    const power =
+      Array.isArray(candidate.power) &&
+      candidate.power.length === 4 &&
+      candidate.power.every((value) => typeof value === "boolean")
+        ? candidate.power
+        : initial.power;
+    const signalCandidate = isRecord(candidate.signal)
+      ? candidate.signal
+      : undefined;
+    const signal =
+      signalCandidate &&
+      [
+        signalCandidate.carrier,
+        signalCandidate.gain,
+        signalCandidate.phase,
+      ].every(isDigit)
+        ? {
+            carrier: signalCandidate.carrier as number,
+            gain: signalCandidate.gain as number,
+            phase: signalCandidate.phase as number,
+          }
+        : initial.signal;
+    const solvedCandidate = isRecord(candidate.solved) ? candidate.solved : {};
 
     const solved = GAME_STAGES.reduce(
       (result, stage) => {
-        result[stage] = Boolean(candidate.solved?.[stage]);
+        result[stage] =
+          typeof solvedCandidate[stage] === "boolean"
+            ? solvedCandidate[stage]
+            : initial.solved[stage];
         return result;
       },
       { ...initial.solved },
@@ -284,21 +310,32 @@ export function restoreState(raw: string | null): GameState {
 
     return {
       version: 2,
-      started: Boolean(candidate.started),
-      power: candidate.power,
+      started:
+        typeof candidate.started === "boolean"
+          ? candidate.started
+          : initial.started,
+      power,
       signal,
-      memoryProgress: Math.min(
+      memoryProgress: boundedInteger(
+        candidate.memoryProgress,
+        0,
         MEMORY_SEQUENCE.length,
-        Math.max(0, Math.trunc(candidate.memoryProgress ?? 0)),
+        initial.memoryProgress,
       ),
-      route: candidate.route,
-      balance: candidate.balance,
-      lock: candidate.lock,
+      route: isNumberArray(candidate.route, 9, 3)
+        ? candidate.route
+        : initial.route,
+      balance: isNumberArray(candidate.balance, 4, 4)
+        ? candidate.balance
+        : initial.balance,
+      lock: isNumberArray(candidate.lock, 5) ? candidate.lock : initial.lock,
       solved,
-      hints: Math.min(2, Math.max(0, Math.trunc(candidate.hints ?? 0))),
-      storySeen: Math.min(
+      hints: boundedInteger(candidate.hints, 0, 2, initial.hints),
+      storySeen: boundedInteger(
+        candidate.storySeen,
+        0,
         GAME_STAGES.length,
-        Math.max(0, Math.trunc(candidate.storySeen ?? 0)),
+        initial.storySeen,
       ),
     };
   } catch {

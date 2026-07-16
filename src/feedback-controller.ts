@@ -1,16 +1,22 @@
 import type { AudioController } from "./audio-controller";
+import type { HapticEvent, HapticsController } from "./haptics-controller";
 
 type FeedbackKind = "tap" | "adjust" | "success" | "error";
 
-const vibrationPatterns: Record<FeedbackKind, number | number[]> = {
-  tap: 8,
-  adjust: 6,
-  success: [18, 35, 34],
-  error: [28, 32, 28],
+const hapticEvents: Record<FeedbackKind, HapticEvent> = {
+  tap: "light",
+  adjust: "medium",
+  success: "success",
+  error: "error",
 };
 
 export class FeedbackController {
-  public constructor(private readonly audio: AudioController) {}
+  private readonly timers = new Set<number>();
+
+  public constructor(
+    private readonly audio: AudioController,
+    private readonly haptics: HapticsController,
+  ) {}
 
   public tap(element?: HTMLElement): void {
     this.audio.press();
@@ -34,9 +40,10 @@ export class FeedbackController {
     element: HTMLElement | undefined,
     symbol: Parameters<AudioController["memory"]>[0],
     matched = true,
+    withHaptics = true,
   ): void {
     this.audio.memory(symbol, matched);
-    this.vibrate(matched ? "adjust" : "error");
+    if (withHaptics) this.vibrate(matched ? "adjust" : "error");
     if (element) this.flash(element, matched ? "adjust" : "error");
   }
 
@@ -60,7 +67,6 @@ export class FeedbackController {
 
   public chapter(index: number): void {
     this.audio.chapter(index);
-    this.vibrate("success");
   }
 
   public breach(): void {
@@ -84,6 +90,14 @@ export class FeedbackController {
     this.flash(element, kind);
   }
 
+  public destroy(): void {
+    this.timers.forEach((timer) => window.clearTimeout(timer));
+    this.timers.clear();
+    document
+      .querySelectorAll<HTMLElement>("[data-feedback]")
+      .forEach((element) => delete element.dataset.feedback);
+  }
+
   private flash(element: HTMLElement, kind: FeedbackKind): void {
     element.dataset.feedback = kind;
     const duration = {
@@ -92,13 +106,14 @@ export class FeedbackController {
       success: 680,
       error: 560,
     }[kind];
-    window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
+      this.timers.delete(timer);
       if (element.dataset.feedback === kind) delete element.dataset.feedback;
     }, duration);
+    this.timers.add(timer);
   }
 
   private vibrate(kind: FeedbackKind): void {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if ("vibrate" in navigator) navigator.vibrate(vibrationPatterns[kind]);
+    this.haptics.trigger(hapticEvents[kind]);
   }
 }

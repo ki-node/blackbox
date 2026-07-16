@@ -127,4 +127,27 @@ describe("game engine", () => {
       restoreState(JSON.stringify({ version: 1, power: ["yes"] })),
     ).toEqual(createInitialState());
   });
+
+  it("salvages valid fields from a partially damaged version-two save", () => {
+    const initial = createInitialState();
+    const restored = restoreState(
+      JSON.stringify({
+        ...initial,
+        started: true,
+        power: [true, false, true, true],
+        signal: { carrier: "broken", gain: 3, phase: 2 },
+        route: ["broken"],
+        solved: { ...initial.solved, power: true, signal: "yes" },
+        hints: 99,
+      }),
+    );
+
+    expect(restored.started).toBe(true);
+    expect(restored.power).toEqual([true, false, true, true]);
+    expect(restored.signal).toEqual(initial.signal);
+    expect(restored.route).toEqual(initial.route);
+    expect(restored.solved.power).toBe(true);
+    expect(restored.solved.signal).toBe(false);
+    expect(restored.hints).toBe(2);
+  });
 });

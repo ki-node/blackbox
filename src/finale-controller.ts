@@ -16,6 +16,7 @@ export class FinaleController {
   private readonly screens: HTMLElement[];
   private readonly cleanup: Array<() => void> = [];
   private replyTimer = 0;
+  private focusFrame = 0;
 
   public constructor(
     private readonly dialog: HTMLDialogElement,
@@ -55,6 +56,7 @@ export class FinaleController {
       "click",
       () => {
         this.feedback.tap();
+        this.audio.stopAll();
         this.dialog.close();
         this.onClose();
       },
@@ -81,6 +83,8 @@ export class FinaleController {
 
   public reset(): void {
     window.clearTimeout(this.replyTimer);
+    window.cancelAnimationFrame(this.focusFrame);
+    this.audio.stopAll();
     this.setReplyStatus("");
     this.renderer.stop();
     delete document.documentElement.dataset.ending;
@@ -90,6 +94,7 @@ export class FinaleController {
 
   public destroy(): void {
     window.clearTimeout(this.replyTimer);
+    window.cancelAnimationFrame(this.focusFrame);
     this.cleanup.forEach((remove) => remove());
     this.renderer.destroy();
   }
@@ -139,7 +144,9 @@ export class FinaleController {
       screen.hidden = screen.dataset.finaleScreen !== name;
     });
     if (!focus) return;
-    window.requestAnimationFrame(() => {
+    window.cancelAnimationFrame(this.focusFrame);
+    this.focusFrame = window.requestAnimationFrame(() => {
+      this.focusFrame = 0;
       this.dialog
         .querySelector<HTMLElement>(
           `[data-finale-screen="${name}"] h2[tabindex="-1"]`,

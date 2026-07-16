@@ -20,6 +20,7 @@ export class ScopeRenderer {
     this.signal = signal;
     this.resize();
     this.render();
+    this.reducedMotion.addEventListener("change", this.handleMotionChange);
     if (!this.reducedMotion.matches) this.animate();
   }
 
@@ -45,6 +46,13 @@ export class ScopeRenderer {
     this.frame += 0.018;
     this.render();
     this.animationFrame = requestAnimationFrame(this.animate);
+  };
+
+  private readonly handleMotionChange = (): void => {
+    window.cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = 0;
+    this.render();
+    if (!this.reducedMotion.matches) this.animate();
   };
 
   private render(): void {
@@ -112,5 +120,7 @@ export class ScopeRenderer {
 
   public destroy(): void {
     cancelAnimationFrame(this.animationFrame);
+    this.animationFrame = 0;
+    this.reducedMotion.removeEventListener("change", this.handleMotionChange);
   }
 }

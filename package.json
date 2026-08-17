@@ -29,18 +29,18 @@
     "budget": "node scripts/check-bundle-size.mjs"
   },
   "devDependencies": {
-    "@axe-core/playwright": "^4.12.1",
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.61.1",
-    "@types/node": "^26.1.1",
-    "eslint": "^10.7.0",
-    "globals": "^17.7.0",
-    "prettier": "^3.9.5",
-    "stylelint": "^17.14.0",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6",
+    "stylelint": "^17.14.1",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.63.0",
-    "vite": "^8.1.4",
+    "typescript-eslint": "^8.67.0",
+    "vite": "^8.2.1",
     "vitest": "^4.1.10"
   }
 }
